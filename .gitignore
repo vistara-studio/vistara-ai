@@ -67,8 +67,8 @@ temp/
 *.tar.gz
 *.zip
 
-# Air (live reload) configuration
-.air.toml
+# Air (live reload) configuration - Keep the default one for easy dev setup
+# .air.toml
 
 # Test coverage
 coverage.out

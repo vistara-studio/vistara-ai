@@ -5,6 +5,7 @@ go 1.24.5
 require (
 	github.com/go-playground/validator/v10 v10.19.0
 	github.com/gofiber/fiber/v2 v2.52.9
+	github.com/golang-jwt/jwt/v5 v5.2.3
 	github.com/google/generative-ai-go v0.15.0
 	github.com/joho/godotenv v1.5.1
 	google.golang.org/api v0.183.0
