@@ -44,7 +44,7 @@ type LoginResponse struct {
 
 // VistaraBeLoginResponse is the alternative response format
 type VistaraBeLoginResponse struct {
-	Success bool `json:"success"`
+	Success bool   `json:"success"`
 	Message string `json:"message"`
 	Data    struct {
 		User struct {
@@ -202,7 +202,7 @@ func (s *AuthService) CheckVistaraBeConnection() error {
 func (s *AuthService) parseJWTToken(tokenString string) (*UserProfile, error) {
 	// This is a simple JWT parser - in production you'd want to validate the signature
 	// For now, we'll just extract the payload to get user_id
-	
+
 	// Split token into parts
 	parts := strings.Split(tokenString, ".")
 	if len(parts) != 3 {
@@ -230,9 +230,9 @@ func (s *AuthService) parseJWTToken(tokenString string) (*UserProfile, error) {
 	// Create user profile from available claims
 	return &UserProfile{
 		ID:       userID,
-		Email:    "", // Will be filled from login request
-		Username: "", // Will be filled from login request
-		Name:     "", // Will be filled from login request
+		Email:    "",     // Will be filled from login request
+		Username: "",     // Will be filled from login request
+		Name:     "",     // Will be filled from login request
 		Role:     "user", // Default role
 	}, nil
 }
