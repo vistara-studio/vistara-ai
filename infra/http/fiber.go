@@ -16,7 +16,7 @@ type Server struct {
 // New creates a new HTTP server
 func New(cfg *config.Config, logger *logger.Logger) *Server {
 	app := fiber.New()
-	
+
 	return &Server{
 		app:    app,
 		config: cfg,

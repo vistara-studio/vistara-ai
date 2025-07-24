@@ -7,14 +7,14 @@ import (
 	"github.com/vistara-studio/vistara-ai/pkg/dto"
 )
 
-// APIResponse represents a standardized API response
+// APIResponse represents a standardized API response structure
 type APIResponse struct {
 	Success bool        `json:"success"`
 	Message string      `json:"message"`
 	Data    interface{} `json:"data,omitempty"`
 }
 
-// ResponseWithData creates a standardized API response with data
+// ResponseWithData creates a standardized API response with data payload
 func ResponseWithData(c *fiber.Ctx, data interface{}, message string, statusCode int, success bool) error {
 	response := APIResponse{
 		Success: success,
@@ -24,7 +24,7 @@ func ResponseWithData(c *fiber.Ctx, data interface{}, message string, statusCode
 	return c.Status(statusCode).JSON(response)
 }
 
-// ResponseWithMessage creates a standardized API response without data
+// ResponseWithMessage creates a standardized API response without data payload
 func ResponseWithMessage(c *fiber.Ctx, message string, statusCode int, success bool) error {
 	response := APIResponse{
 		Success: success,
@@ -33,7 +33,7 @@ func ResponseWithMessage(c *fiber.Ctx, message string, statusCode int, success b
 	return c.Status(statusCode).JSON(response)
 }
 
-// FormatGeminiPrompt formats the detailed prompt for the Gemini AI
+// FormatGeminiPrompt creates a detailed prompt for Gemini AI to generate travel itinerary
 func FormatGeminiPrompt(userInput *dto.SmartPlanRequest, duration int) string {
 	promptTemplate := `You are a premium travel planning AI for Indonesia. Create a detailed travel itinerary.
 
@@ -110,53 +110,53 @@ Create a complete %d-day itinerary for %s focusing on %s activities with %s inte
 	}
 
 	return fmt.Sprintf(promptTemplate,
-		userInput.Destination,    // destination
-		startDateStr,            // start date
-		endDateStr,              // end date
-		duration,                // duration
-		budgetStr,               // budget
-		preferencesStr,          // activity preferences
-		travelStyleStr,          // travel style
-		intensityStr,            // activity intensity
-		intensityStr,            // intensity level in JSON
-		travelStyleStr,          // travel style notes
-		duration,                // duration for final
-		userInput.Destination,   // destination for final
-		preferencesStr,          // preferences for final
-		intensityStr,            // intensity for final
+		userInput.Destination, // destination
+		startDateStr,          // start date
+		endDateStr,            // end date
+		duration,              // duration
+		budgetStr,             // budget
+		preferencesStr,        // activity preferences
+		travelStyleStr,        // travel style
+		intensityStr,          // activity intensity
+		intensityStr,          // intensity level in JSON
+		travelStyleStr,        // travel style notes
+		duration,              // duration for final
+		userInput.Destination, // destination for final
+		preferencesStr,        // preferences for final
+		intensityStr,          // intensity for final
 	)
 }
 
-// FormatGeminiPromptWithIntegration formats the detailed prompt for the Gemini AI with integration data
+// FormatGeminiPromptWithIntegration creates a detailed prompt with integration data from vistara-be
 func FormatGeminiPromptWithIntegration(userInput *dto.SmartPlanRequest, duration int, businesses []dto.LocalBusiness, attractions []dto.TouristAttraction) string {
-	// Base prompt
+	// Start with base prompt
 	basePrompt := FormatGeminiPrompt(userInput, duration)
-	
+
 	// Add integration data if available
 	if len(businesses) > 0 || len(attractions) > 0 {
 		additionalInfo := "\n\n**INTEGRATION DATA - USE THESE VERIFIED BUSINESSES AND ATTRACTIONS:**\n"
-		
+
 		if len(businesses) > 0 {
 			additionalInfo += "\nVerified Local Businesses:\n"
 			for _, business := range businesses {
-				additionalInfo += fmt.Sprintf("- %s (%s): %s - %s\n", 
+				additionalInfo += fmt.Sprintf("- %s (%s): %s - %s\n",
 					business.Name, business.Type, business.Description, business.Address)
 			}
 		}
-		
+
 		if len(attractions) > 0 {
 			additionalInfo += "\nVerified Tourist Attractions:\n"
 			for _, attraction := range attractions {
-				additionalInfo += fmt.Sprintf("- %s (%s): %s - %s\n", 
+				additionalInfo += fmt.Sprintf("- %s (%s): %s - %s\n",
 					attraction.Name, attraction.Type, attraction.Description, attraction.Address)
 			}
 		}
-		
+
 		additionalInfo += "\nPrioritize including these verified businesses and attractions in your itinerary when relevant to user preferences.\n"
-		
-		// Insert additional info before the final instruction
+
+		// Append additional info to base prompt
 		basePrompt = basePrompt + additionalInfo
 	}
-	
+
 	return basePrompt
 }

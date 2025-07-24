@@ -12,7 +12,7 @@ var validate *validator.Validate
 
 func init() {
 	validate = validator.New()
-	
+
 	// Register custom tag name function
 	validate.RegisterTagNameFunc(func(fld reflect.StructField) string {
 		name := strings.SplitN(fld.Tag.Get("json"), ",", 2)[0]

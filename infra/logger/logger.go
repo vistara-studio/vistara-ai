@@ -13,7 +13,7 @@ type Logger struct {
 // New creates a new logger instance
 func New(level string) *Logger {
 	logger := log.New(os.Stdout, "VISTARA-AI: ", log.LstdFlags|log.Lshortfile)
-	
+
 	return &Logger{
 		Logger: logger,
 	}

@@ -9,21 +9,21 @@ import (
 
 // Config holds all configuration for the application
 type Config struct {
-	APIKey           string
-	GeminiAPIKey     string
-	GeminiModelName  string
-	Port             string
-	Environment      string
-	LogLevel         string
-	
+	APIKey          string
+	GeminiAPIKey    string
+	GeminiModelName string
+	Port            string
+	Environment     string
+	LogLevel        string
+
 	// JWT configuration
-	JWTSecret        string
-	
+	JWTSecret string
+
 	// CORS configuration for integration with vistara-be
-	AllowedOrigins   string
-	
+	AllowedOrigins string
+
 	// Service integration
-	VistaraBeURL     string
+	VistaraBeURL string
 }
 
 // Load loads configuration from environment variables
@@ -34,15 +34,15 @@ func Load() (*Config, error) {
 	}
 
 	cfg := &Config{
-		APIKey:           getEnv("API_SECRET_KEY", "vistara-ai-default-key"),
-		GeminiAPIKey:     getEnv("GEMINI_API_KEY", ""),
-		GeminiModelName:  getEnv("GEMINI_MODEL_NAME", "gemini-2.0-flash-exp"),
-		Port:             getEnv("PORT", "8080"),
-		Environment:      getEnv("GO_ENV", "development"),
-		LogLevel:         getEnv("LOG_LEVEL", "info"),
-		JWTSecret:        getEnv("JWT_SECRET", "vistara-ai-jwt-secret-change-in-production"),
-		AllowedOrigins:   getEnv("ALLOWED_ORIGINS", "*"),
-		VistaraBeURL:     getEnv("VISTARA_BE_URL", "http://localhost:8080"),
+		APIKey:          getEnv("API_SECRET_KEY", "vistara-ai-default-key"),
+		GeminiAPIKey:    getEnv("GEMINI_API_KEY", ""),
+		GeminiModelName: getEnv("GEMINI_MODEL_NAME", "gemini-2.0-flash-exp"),
+		Port:            getEnv("PORT", "8080"),
+		Environment:     getEnv("GO_ENV", "development"),
+		LogLevel:        getEnv("LOG_LEVEL", "info"),
+		JWTSecret:       getEnv("JWT_SECRET", "vistara-ai-jwt-secret-change-in-production"),
+		AllowedOrigins:  getEnv("ALLOWED_ORIGINS", "*"),
+		VistaraBeURL:    getEnv("VISTARA_BE_URL", "http://localhost:8080"),
 	}
 
 	// Validate critical settings
