@@ -126,3 +126,37 @@ Create a complete %d-day itinerary for %s focusing on %s activities with %s inte
 		intensityStr,            // intensity for final
 	)
 }
+
+// FormatGeminiPromptWithIntegration formats the detailed prompt for the Gemini AI with integration data
+func FormatGeminiPromptWithIntegration(userInput *dto.SmartPlanRequest, duration int, businesses []dto.LocalBusiness, attractions []dto.TouristAttraction) string {
+	// Base prompt
+	basePrompt := FormatGeminiPrompt(userInput, duration)
+	
+	// Add integration data if available
+	if len(businesses) > 0 || len(attractions) > 0 {
+		additionalInfo := "\n\n**INTEGRATION DATA - USE THESE VERIFIED BUSINESSES AND ATTRACTIONS:**\n"
+		
+		if len(businesses) > 0 {
+			additionalInfo += "\nVerified Local Businesses:\n"
+			for _, business := range businesses {
+				additionalInfo += fmt.Sprintf("- %s (%s): %s - %s\n", 
+					business.Name, business.Type, business.Description, business.Address)
+			}
+		}
+		
+		if len(attractions) > 0 {
+			additionalInfo += "\nVerified Tourist Attractions:\n"
+			for _, attraction := range attractions {
+				additionalInfo += fmt.Sprintf("- %s (%s): %s - %s\n", 
+					attraction.Name, attraction.Type, attraction.Description, attraction.Address)
+			}
+		}
+		
+		additionalInfo += "\nPrioritize including these verified businesses and attractions in your itinerary when relevant to user preferences.\n"
+		
+		// Insert additional info before the final instruction
+		basePrompt = basePrompt + additionalInfo
+	}
+	
+	return basePrompt
+}

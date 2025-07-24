@@ -56,8 +56,15 @@ func (h *AIHandler) GenerateSmartPlan(c *fiber.Ctx) error {
 
 	log.Printf("Smart plan request validated for destination: %s, duration: %d days", req.Destination, duration)
 
-	// Generate smart plan using AI service with calculated duration
-	rawItinerary, err := h.smartPlannerService.CreatePlan(&req, duration)
+	// Get token from request for vistara-be integration
+	var userToken string
+	authHeader := c.Get("Authorization")
+	if authHeader != "" && strings.HasPrefix(authHeader, "Bearer ") {
+		userToken = strings.TrimPrefix(authHeader, "Bearer ")
+	}
+
+	// Generate smart plan using AI service with calculated duration and user token
+	rawItinerary, err := h.smartPlannerService.CreatePlan(&req, duration, userToken)
 	if err != nil {
 		log.Printf("AI Service error during Smart Plan creation: %v", err)
 		return util.ResponseWithMessage(c, "AI Smart Planner service is currently unavailable", fiber.StatusServiceUnavailable, false)
@@ -85,6 +92,7 @@ func (h *AIHandler) GenerateSmartPlan(c *fiber.Ctx) error {
 		TravelStyle:       req.TravelStyle,
 		ActivityIntensity: req.ActivityIntensity,
 		GeneratedAt:       time.Now(),
+		UserID:            req.UserID,
 	}
 
 	return util.ResponseWithData(c, response, "Smart plan generated successfully", fiber.StatusOK, true)
