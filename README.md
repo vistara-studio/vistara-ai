@@ -1,139 +1,174 @@
-# Vistara AI
+# Vistara AI - Smart Travel Planner
 
-AI-powered travel planning service using Google Gemini AI for intelligent itinerary generation.
+Vistara AI is an intelligent travel planning service that creates personalized itineraries using Google's Gemini AI. It integrates seamlessly with the Vistara BE platform to provide comprehensive travel planning solutions.
 
-## Features
+## � Quick Start
 
-- 🤖 AI-powered travel planning with Google Gemini 2.5 Flash
-- 📅 Date-based trip planning with validation
-- 💰 Budget-optimized recommendations
-- 🚀 Fast Go Fiber API
-- 🐳 Docker containerization
-- 🔒 API key authentication
-- 🔗 **Seamless integration with Vistara BE**
-- 🏢 **Local business recommendations from verified data**
-- 🏛️ **Tourist attraction integration**
-
-## Prerequisites
-
-- Go 1.24.5+
-- Docker
-- Google Gemini API key
-
-## Quick Start
-
-### 1. Clone Repository
 ```bash
-git clone https://github.com/vistara-studio/vistara-ai.git
-cd vistara-ai
+# Setup (first time)
+make setup
+
+# Run development server
+make dev
+
+# Test the API
+make test-api
 ```
 
-### 2. Environment Setup
+## 📋 Prerequisites
+
+- Go 1.19+
+- Google Gemini API Key
+- Docker (optional)
+
+## ⚙️ Configuration
+
 Create `.env` file:
-```bash
+
+```env
+# Required
+GEMINI_API_KEY=your_gemini_api_key
+
+# Optional (has defaults)
 PORT=5000
-GO_ENV=development
-GEMINI_API_KEY=your_gemini_api_key_here
-GEMINI_MODEL_NAME=gemini-2.0-flash-exp
-API_SECRET_KEY=vistara-ai-integration-key
-
-# For integration with vistara-be
-ALLOWED_ORIGINS=http://localhost:8080,http://localhost:3000
+API_SECRET_KEY=your_api_key
+JWT_SECRET=your_jwt_secret
 VISTARA_BE_URL=http://localhost:8080
+GO_ENV=development
 ```
 
-### 3. Run with Docker
-```bash
-make docker-build
-make docker-run
-```
-
-Or run locally:
-```bash
-make deps
-make run
-```
-
-## API Usage
+## 🔗 API Endpoints
 
 ### Health Check
 ```http
-GET /
+GET /api/v1/health
 ```
 
 ### Smart Travel Planning
 
-**From Vistara BE (Service-to-Service):**
+**With JWT Authentication:**
+```http
+POST /api/v1/smart-planner
+Authorization: Bearer <jwt_token>
+Content-Type: application/json
+
+{
+  "destination": "Bali",
+  "start_date": "2025-01-15T00:00:00Z",
+  "end_date": "2025-01-20T00:00:00Z",
+  "budget": 5000000,
+  "travel_style": "romantic_couple",
+  "activity_preferences": ["beach", "culture"],
+  "activity_intensity": "balanced"
+}
+```
+
+**Service-to-Service (from Vistara BE):**
 ```http
 POST /api/v1/smart-planner
 X-Service: vistara-be
 Content-Type: application/json
-
-{
-  "destination": "Bali",
-  "start_date": "2025-08-01T00:00:00Z",
-  "end_date": "2025-08-05T00:00:00Z",
-  "budget": 5000000,
-  "travel_style": "romantic_couple",
-  "activity_preferences": ["beach", "culture", "culinary"],
-  "activity_intensity": "balanced",
-  "user_id": "user-123"
-}
 ```
 
-**External API (requires API key):**
+### Authentication
+
+**Login:**
 ```http
-POST /api/v1/smart-planner
-Authorization: Bearer your_api_key
+POST /api/v1/auth/login
 Content-Type: application/json
 
 {
-  "destination": "Bali",
-  "start_date": "2025-08-01",
-  "end_date": "2025-08-05",
-  "budget": 5000000,
-  "travel_style": "budget",
-  "activity_preferences": ["sightseeing", "adventure"]
+  "username": "user@example.com",
+  "password": "password"
 }
 ```
 
-## Development Commands
-
-```bash
-make build          # Build application
-make run            # Run locally
-make dev            # Run with hot reload
-make test           # Run tests
-make docker-build   # Build Docker image
-make docker-run     # Run Docker container
-make test-api       # Test API endpoints
-
-# Integration with vistara-be
-make test-integration        # Test integration with vistara-be
-make test-smart-plan-integration  # Test smart plan with integration
-make dev-full               # Start both vistara-ai and vistara-be
+**Get Profile:**
+```http
+GET /api/v1/auth/profile
+Authorization: Bearer <jwt_token>
 ```
 
-## Integration with Vistara BE
+## 🛠️ Development
 
-This service is designed to work seamlessly with the main Vistara backend. Key integration features:
+```bash
+# Install dependencies
+make install-deps
 
-- **Service-to-Service Authentication**: Vistara BE can call this service using the `X-Service` header
-- **Local Business Integration**: Fetches verified local businesses from Vistara BE
-- **Tourist Attraction Data**: Integrates real attraction data from the main database
-- **User Context**: Maintains user context across services
-- **Plan Notifications**: Notifies Vistara BE when plans are generated
+# Format code
+make fmt
 
-For detailed integration instructions, see [INTEGRATION_GUIDE.md](./INTEGRATION_GUIDE.md).
+# Run linter
+make lint
 
-## Configuration
+# Run tests with coverage
+make test-coverage
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `PORT` | Server port | `5000` |
-| `GEMINI_API_KEY` | Google Gemini API key | Required |
-| `API_KEY` | API authentication key | Required |
+# Build application
+make build
+```
 
-## License
+## 🐳 Docker
 
-Copyright (c) 2025 Muhammad Rafly Ash Shiddiqi
+```bash
+# Build Docker image
+make docker-build
+
+# Run Docker container
+make docker-run
+```
+
+## 🔒 Authentication
+
+Vistara AI uses a multi-tier authentication system:
+
+1. **Public Endpoints**: Health checks
+2. **JWT Only**: User-specific features  
+3. **Service Only**: Inter-service communication
+4. **Either Auth**: Smart planner (supports both JWT and service auth)
+
+## 🧪 Testing
+
+```bash
+# Test health endpoint
+make test-api
+
+# Test smart planning
+make test-smart-plan
+
+# Run all tests
+make test
+```
+
+## 📁 Project Structure
+
+```
+cmd/api/           # Application entry point
+internal/handler/  # HTTP handlers
+middleware/        # Authentication middleware
+pkg/
+  dto/            # Data transfer objects
+  service/        # Business logic
+  util/           # Helper utilities
+  validator/      # Input validation
+infra/
+  config/         # Configuration
+  logger/         # Logging utilities
+  http/           # HTTP server setup
+```
+
+## 🔧 Make Commands
+
+Run `make help` to see all available commands.
+
+## 🤝 Integration with Vistara BE
+
+Vistara AI integrates with Vistara BE to:
+- Authenticate users via JWT tokens
+- Fetch verified local businesses
+- Retrieve tourist attractions  
+- Send notifications when plans are generated
+
+## 📝 License
+
+This project is proprietary software of Vistara Studio.
