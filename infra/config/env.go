@@ -12,10 +12,18 @@ type Config struct {
 	APIKey           string
 	GeminiAPIKey     string
 	GeminiModelName  string
-	GeminiAPIVersion string
 	Port             string
 	Environment      string
 	LogLevel         string
+	
+	// JWT configuration
+	JWTSecret        string
+	
+	// CORS configuration for integration with vistara-be
+	AllowedOrigins   string
+	
+	// Service integration
+	VistaraBeURL     string
 }
 
 // Load loads configuration from environment variables
@@ -29,10 +37,12 @@ func Load() (*Config, error) {
 		APIKey:           getEnv("API_SECRET_KEY", "vistara-ai-default-key"),
 		GeminiAPIKey:     getEnv("GEMINI_API_KEY", ""),
 		GeminiModelName:  getEnv("GEMINI_MODEL_NAME", "gemini-2.0-flash-exp"),
-		GeminiAPIVersion: getEnv("GEMINI_API_VERSION", ""),
 		Port:             getEnv("PORT", "8080"),
 		Environment:      getEnv("GO_ENV", "development"),
 		LogLevel:         getEnv("LOG_LEVEL", "info"),
+		JWTSecret:        getEnv("JWT_SECRET", "vistara-ai-jwt-secret-change-in-production"),
+		AllowedOrigins:   getEnv("ALLOWED_ORIGINS", "*"),
+		VistaraBeURL:     getEnv("VISTARA_BE_URL", "http://localhost:8080"),
 	}
 
 	// Validate critical settings
@@ -42,6 +52,10 @@ func Load() (*Config, error) {
 
 	if cfg.APIKey == "vistara-ai-default-key" {
 		log.Println("WARNING: Using default API_SECRET_KEY")
+	}
+
+	if cfg.JWTSecret == "vistara-ai-jwt-secret-change-in-production" {
+		log.Println("WARNING: Using default JWT_SECRET, change it in production")
 	}
 
 	log.Printf("Configuration loaded for environment: %s", cfg.Environment)
