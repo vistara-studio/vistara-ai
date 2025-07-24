@@ -26,7 +26,7 @@ func (s *SmartPlannerService) CreatePlan(userInput *dto.SmartPlanRequest, durati
 	// Fetch additional data from vistara-be if integration is available
 	var localBusinesses []dto.LocalBusiness
 	var attractions []dto.TouristAttraction
-	
+
 	if s.integrationService != nil {
 		// Fetch local businesses with user token
 		if businesses, err := s.integrationService.FetchLocalBusinesses(userInput.Destination, "", userToken); err != nil {

@@ -48,11 +48,11 @@ func (g *GeminiService) GenerateText(promptText string) (string, error) {
 	topP := float32(0.8)
 	topK := int32(40)
 	maxTokens := int32(8192)
-	
+
 	model.GenerationConfig = genai.GenerationConfig{
 		Temperature:     &temperature, // Lower temperature for more consistent responses
-		TopP:           &topP,
-		TopK:           &topK,
+		TopP:            &topP,
+		TopK:            &topK,
 		MaxOutputTokens: &maxTokens,
 	}
 
