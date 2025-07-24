@@ -38,10 +38,10 @@ func main() {
 	app.Use(logger.New())
 	app.Use(recover.New())
 	app.Use(cors.New(cors.Config{
-		AllowOrigins:     "*",
+		AllowOrigins:     cfg.AllowedOrigins,
 		AllowMethods:     "GET,POST,HEAD,PUT,DELETE,PATCH,OPTIONS",
 		AllowHeaders:     "*",
-		AllowCredentials: false, // Set to false when using wildcard origins
+		AllowCredentials: true,
 	}))
 
 	// Health check route
@@ -55,20 +55,23 @@ func main() {
 
 	// Initialize AI services
 	geminiService := service.NewGeminiService(cfg)
-	smartPlannerService := service.NewSmartPlannerService(geminiService)
+	integrationService := service.NewIntegrationService(cfg)
+	smartPlannerService := service.NewSmartPlannerService(geminiService, integrationService)
+	authService := service.NewAuthService(cfg)
 	
 	// Initialize handlers
 	aiHandler := handler.NewAIHandler(smartPlannerService, cfg)
+	authHandler := handler.NewAuthHandler(cfg, authService)
 
 	// Setup routes
-	setupRoutes(app, aiHandler, cfg)
+	setupRoutes(app, aiHandler, authHandler, cfg)
 
 	// Start server
 	log.Printf("Starting Vistara AI Service on port %s", cfg.Port)
 	log.Fatal(app.Listen(":" + cfg.Port))
 }
 
-func setupRoutes(app *fiber.App, aiHandler *handler.AIHandler, cfg *config.Config) {
+func setupRoutes(app *fiber.App, aiHandler *handler.AIHandler, authHandler *handler.AuthHandler, cfg *config.Config) {
 	// API group
 	api := app.Group("/api/v1")
 
@@ -81,13 +84,36 @@ func setupRoutes(app *fiber.App, aiHandler *handler.AIHandler, cfg *config.Confi
 		})
 	})
 
-	// AI Services routes (with API key authentication)
-	// Smart Planner AI - directly under /api/v1
-	api.Use("/smart-planner", middleware.APIKeyAuth(cfg))
-	api.Post("/smart-planner", aiHandler.GenerateSmartPlan)
+	// Auth routes (no authentication required)
+	auth := api.Group("/auth")
+	auth.Post("/login", authHandler.Login)                  // Login via vistara-be
+	auth.Post("/login-fallback", authHandler.LoginFallback) // Fallback when vistara-be is down
+	auth.Get("/test-token", authHandler.GenerateTestToken)  // For development/testing
+	auth.Get("/check-connection", authHandler.CheckConnection) // Check vistara-be connection
+
+	// Protected routes (require JWT authentication ONLY)
+	protected := api.Group("/user")
+	protected.Use(middleware.RequireJWTOnly(cfg))
+	protected.Get("/profile", authHandler.GetProfile)
+	protected.Post("/smart-planner", aiHandler.GenerateSmartPlan) // JWT-protected version
+
+	// Service-to-service routes (require service authentication ONLY)
+	// These are for communication between vistara-be and vistara-ai
+	service := api.Group("/service")
+	service.Use(middleware.RequireServiceOnly(cfg))
+	service.Post("/smart-planner", aiHandler.GenerateSmartPlan)
+
+	// Secure routes (require BOTH JWT AND service authentication)
+	// This is the most secure option for sensitive operations
+	secure := api.Group("/secure")
+	secure.Use(middleware.RequireBothAuth(cfg))
+	secure.Post("/smart-planner", aiHandler.GenerateSmartPlan)
+
+	// Legacy route - now requires EITHER JWT OR service auth (more secure than before)
+	api.Post("/smart-planner", middleware.RequireEitherAuth(cfg), aiHandler.GenerateSmartPlan)
 	
 	// Future AI services can be added here
-	// ai.Post("/recommendation-engine", aiHandler.GenerateRecommendations)
-	// ai.Post("/travel-assistant", aiHandler.TravelAssistant)
-	// ai.Post("/local-guide-matcher", aiHandler.LocalGuideMatcher)
+	// protected.Post("/recommendation-engine", aiHandler.GenerateRecommendations)
+	// protected.Post("/travel-assistant", aiHandler.TravelAssistant)
+	// service.Post("/local-guide-matcher", aiHandler.LocalGuideMatcher)
 }
