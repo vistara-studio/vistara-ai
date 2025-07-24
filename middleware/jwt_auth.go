@@ -20,13 +20,13 @@ type JWTClaims struct {
 
 // VistaBeClaims represents the JWT claims structure from vistara-be
 type VistaBeClaims struct {
-	UserID            string `json:"user_id"`
-	IsPremium         bool   `json:"is_premium"`
-	PremiumExpiredAt  string `json:"premium_expired_at"`
+	UserID           string `json:"user_id"`
+	IsPremium        bool   `json:"is_premium"`
+	PremiumExpiredAt string `json:"premium_expired_at"`
 	jwt.RegisteredClaims
 }
 
-// JWTAuth middleware for JWT authentication
+// JWTAuth creates middleware for mandatory JWT authentication
 func JWTAuth(cfg *config.Config) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		// Get token from Authorization header
@@ -99,13 +99,13 @@ func JWTAuth(cfg *config.Config) fiber.Handler {
 	}
 }
 
-// OptionalJWTAuth middleware for optional JWT authentication
-// If JWT is provided, it validates it, if not, it continues without authentication
+// OptionalJWTAuth creates middleware for optional JWT authentication
+// If JWT is provided, it validates it; if not, it continues without authentication
 func OptionalJWTAuth(cfg *config.Config) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		// Get token from Authorization header
 		authHeader := c.Get("Authorization")
-		
+
 		// If no auth header, continue without authentication
 		if authHeader == "" {
 			return c.Next()

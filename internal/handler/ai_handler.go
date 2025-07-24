@@ -10,27 +10,32 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/vistara-studio/vistara-ai/infra/config"
+	"github.com/vistara-studio/vistara-ai/infra/logger"
 	"github.com/vistara-studio/vistara-ai/pkg/dto"
 	"github.com/vistara-studio/vistara-ai/pkg/service"
 	"github.com/vistara-studio/vistara-ai/pkg/util"
 	"github.com/vistara-studio/vistara-ai/pkg/validator"
 )
 
-// AIHandler handles AI-related HTTP requests
+// AIHandler handles AI-related HTTP requests for travel planning
 type AIHandler struct {
 	smartPlannerService *service.SmartPlannerService
+	integrationService  *service.IntegrationService
+	logger              *logger.Logger
 	config              *config.Config
 }
 
-// NewAIHandler creates a new AI handler
-func NewAIHandler(smartPlannerService *service.SmartPlannerService, cfg *config.Config) *AIHandler {
+// NewAIHandler creates a new instance of AIHandler
+func NewAIHandler(smartPlannerService *service.SmartPlannerService, integrationService *service.IntegrationService, logger *logger.Logger, cfg *config.Config) *AIHandler {
 	return &AIHandler{
 		smartPlannerService: smartPlannerService,
+		integrationService:  integrationService,
+		logger:              logger,
 		config:              cfg,
 	}
 }
 
-// GenerateSmartPlan handles smart travel planning requests
+// GenerateSmartPlan handles smart travel planning requests with AI-powered itinerary generation
 func (h *AIHandler) GenerateSmartPlan(c *fiber.Ctx) error {
 	// Parse request body
 	var req dto.SmartPlanRequest
@@ -102,7 +107,7 @@ func (h *AIHandler) GenerateSmartPlan(c *fiber.Ctx) error {
 func (h *AIHandler) validateSmartPlanRequest(req *dto.SmartPlanRequest) error {
 	// Calculate duration from dates
 	duration := int(req.EndDate.Sub(req.StartDate).Hours()/24) + 1
-	
+
 	// Check if end date is after start date
 	if req.EndDate.Before(req.StartDate) || req.EndDate.Equal(req.StartDate) {
 		return fmt.Errorf("end date must be after start date")
@@ -124,15 +129,15 @@ func (h *AIHandler) cleanAIResponse(response string) string {
 	// Remove markdown code blocks (```json and ```)
 	re := regexp.MustCompile("```(?:json)?\\s*")
 	cleaned := re.ReplaceAllString(response, "")
-	
+
 	// Remove trailing ```
 	cleaned = strings.TrimSuffix(cleaned, "```")
-	
+
 	// Trim whitespace
 	cleaned = strings.TrimSpace(cleaned)
-	
+
 	// Remove any leading/trailing backticks
 	cleaned = strings.Trim(cleaned, "`")
-	
+
 	return cleaned
 }

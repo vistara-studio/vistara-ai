@@ -1,11 +1,11 @@
 package middleware
 
 import (
-	"strings"
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/vistara-studio/vistara-ai/infra/config"
 	"github.com/vistara-studio/vistara-ai/pkg/service"
+	"strings"
 )
 
 // RequireBothAuth middleware that requires BOTH JWT authentication AND service authentication
@@ -61,11 +61,11 @@ func RequireServiceOnly(cfg *config.Config) fiber.Handler {
 // RequireEitherAuth middleware that requires EITHER JWT OR service authentication
 func RequireEitherAuth(cfg *config.Config) fiber.Handler {
 	authService := service.NewAuthService(cfg)
-	
+
 	return func(c *fiber.Ctx) error {
 		// Check JWT authentication first
 		authHeader := c.Get("Authorization")
-		
+
 		jwtValid := false
 		if authHeader != "" && strings.HasPrefix(authHeader, "Bearer ") {
 			tokenString := strings.TrimPrefix(authHeader, "Bearer ")
@@ -90,7 +90,7 @@ func RequireEitherAuth(cfg *config.Config) fiber.Handler {
 						}
 						return []byte(cfg.JWTSecret), nil
 					})
-					
+
 					if err == nil && aiToken.Valid {
 						if claims, ok := aiToken.Claims.(*JWTClaims); ok {
 							// Store user info in context for vistara-ai token
@@ -106,32 +106,32 @@ func RequireEitherAuth(cfg *config.Config) fiber.Handler {
 				}
 			}
 		}
-		
+
 		if jwtValid {
 			return c.Next()
 		}
-		
+
 		// JWT failed, try service auth
 		apiKey := c.Get("X-API-Key")
-		
+
 		if apiKey == "" {
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 				"success": false,
 				"message": "Authentication required - provide either JWT token or valid API key",
 			})
 		}
-		
+
 		if apiKey != cfg.APIKey {
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 				"success": false,
 				"message": "Invalid API key",
 			})
 		}
-		
+
 		// Service authentication successful
 		c.Locals("authenticated", true)
 		c.Locals("service", c.Get("X-Service"))
-		
+
 		return c.Next()
 	}
 }

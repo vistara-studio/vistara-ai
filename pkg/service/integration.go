@@ -11,13 +11,13 @@ import (
 	"github.com/vistara-studio/vistara-ai/pkg/dto"
 )
 
-// IntegrationService handles integration with vistara-be backend
+// IntegrationService handles communication with vistara-be backend services
 type IntegrationService struct {
 	config     *config.Config
 	httpClient *http.Client
 }
 
-// NewIntegrationService creates a new integration service
+// NewIntegrationService creates a new instance of IntegrationService
 func NewIntegrationService(cfg *config.Config) *IntegrationService {
 	return &IntegrationService{
 		config: cfg,
@@ -27,11 +27,11 @@ func NewIntegrationService(cfg *config.Config) *IntegrationService {
 	}
 }
 
-// FetchLocalBusinesses fetches local businesses from vistara-be
+// FetchLocalBusinesses retrieves local businesses from vistara-be API
 func (s *IntegrationService) FetchLocalBusinesses(destination string, businessType string, userToken string) ([]dto.LocalBusiness, error) {
 	url := fmt.Sprintf("%s/api/locals", s.config.VistaraBeURL)
 	
-	// Create request
+	// Create HTTP request
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
@@ -47,18 +47,18 @@ func (s *IntegrationService) FetchLocalBusinesses(destination string, businessTy
 	}
 	req.URL.RawQuery = q.Encode()
 
-	// Add headers
+	// Set request headers
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("X-Service", "vistara-ai")
-	
-	// Use JWT token if provided, otherwise fall back to API key
+
+	// Use JWT token if provided, otherwise use service API key as Bearer token
 	if userToken != "" {
 		req.Header.Set("Authorization", "Bearer "+userToken)
 	} else {
+		// Use API key as Bearer token for service-to-service authentication
+		req.Header.Set("Authorization", "Bearer "+s.config.APIKey)
 		req.Header.Set("X-API-Key", s.config.APIKey)
-	}
-
-	// Make request
+	}	// Execute HTTP request
 	resp, err := s.httpClient.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch local businesses: %w", err)
@@ -80,11 +80,11 @@ func (s *IntegrationService) FetchLocalBusinesses(destination string, businessTy
 	return response.Data, nil
 }
 
-// FetchTouristAttractions fetches tourist attractions from vistara-be
+// FetchTouristAttractions retrieves tourist attractions from vistara-be API
 func (s *IntegrationService) FetchTouristAttractions(destination string, userToken string) ([]dto.TouristAttraction, error) {
 	url := fmt.Sprintf("%s/api/tourist-attractions", s.config.VistaraBeURL)
-	
-	// Create request
+
+	// Create HTTP request
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
@@ -97,18 +97,20 @@ func (s *IntegrationService) FetchTouristAttractions(destination string, userTok
 	}
 	req.URL.RawQuery = q.Encode()
 
-	// Add headers
+	// Set request headers
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("X-Service", "vistara-ai")
 	
-	// Use JWT token if provided, otherwise fall back to API key
+	// Use JWT token if provided, otherwise use service API key as Bearer token
 	if userToken != "" {
 		req.Header.Set("Authorization", "Bearer "+userToken)
 	} else {
-		req.Header.Set("X-API-Key", s.config.APIKey) // Add API key for service authentication
+		// Use API key as Bearer token for service-to-service authentication
+		req.Header.Set("Authorization", "Bearer "+s.config.APIKey)
+		req.Header.Set("X-API-Key", s.config.APIKey)
 	}
 
-	// Make request
+	// Execute HTTP request
 	resp, err := s.httpClient.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch tourist attractions: %w", err)
@@ -130,19 +132,19 @@ func (s *IntegrationService) FetchTouristAttractions(destination string, userTok
 	return response.Data, nil
 }
 
-// NotifyPlanGenerated notifies vistara-be that a plan has been generated
+// NotifyPlanGenerated sends notification to vistara-be when a travel plan is generated
 func (s *IntegrationService) NotifyPlanGenerated(userID string, planData interface{}) error {
 	if userID == "" {
-		return nil // Skip notification if no user ID
+		return nil // Skip notification if no user ID provided
 	}
 
 	url := fmt.Sprintf("%s/api/ai/plan-generated", s.config.VistaraBeURL)
-	
+
 	payload := map[string]interface{}{
-		"user_id":    userID,
-		"plan_data":  planData,
-		"timestamp":  time.Now(),
-		"service":    "vistara-ai",
+		"user_id":   userID,
+		"plan_data": planData,
+		"timestamp": time.Now(),
+		"service":   "vistara-ai",
 	}
 
 	jsonData, err := json.Marshal(payload)

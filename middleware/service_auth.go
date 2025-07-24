@@ -45,7 +45,7 @@ func ServiceAuth(cfg *config.Config) fiber.Handler {
 		// Store service info in context
 		c.Locals("authenticated", true)
 		c.Locals("service", serviceHeader)
-		
+
 		return c.Next()
 	}
 }
