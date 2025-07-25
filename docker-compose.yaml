@@ -1,21 +1,26 @@
-version: '3.8'
 
 services:
-  # PostgreSQL Database
+  # PostgreSQL Database with PostGIS
   db:
-    image: postgres:15-alpine
+    image: postgis/postgis:15-3.3-alpine
     container_name: vistara-ai-db
     environment:
-      POSTGRES_USER: vistara_user
-      POSTGRES_PASSWORD: vistara_password
+      POSTGRES_USER: vistara
+      POSTGRES_PASSWORD: vistara123
       POSTGRES_DB: vistara_ai
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8"
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./db/migrations:/docker-entrypoint-initdb.d
+      - ./database/migrations:/docker-entrypoint-initdb.d
     networks:
       - vistara-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vistara -d vistara_ai"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   # Vistara AI Application
   app:
@@ -24,11 +29,24 @@ services:
     ports:
       - "5000:5000"
     environment:
-      - GO_ENV=production
-      - DATABASE_URL=postgres://vistara_user:vistara_password@db:5432/vistara_ai?sslmode=disable
+      - GO_ENV=development
+      - DATABASE_URL=postgres://vistara:vistara123@db:5432/vistara_ai?sslmode=disable
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_NAME=vistara_ai
+      - DB_USER=vistara
+      - DB_PASSWORD=vistara123
       - PORT=5000
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - GEMINI_MODEL_NAME=gemini-2.5-flash
+      - API_SECRET_KEY=vistara-ai-integration-key
+      - JWT_SECRET=vistara-ai-secret-jwt-key
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_KEY=${SUPABASE_KEY}
+      - SUPABASE_BUCKET=${SUPABASE_BUCKET}
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     networks:
       - vistara-network
     volumes:

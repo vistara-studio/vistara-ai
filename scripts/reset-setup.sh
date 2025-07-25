@@ -29,9 +29,12 @@ rm -f .air.toml.bak
 
 # Stop and remove Docker containers/images
 echo "🐳 Stopping and removing Docker containers..."
-docker stop vistara-ai 2>/dev/null || true
-docker rm vistara-ai 2>/dev/null || true
-docker rmi vistara-ai:latest 2>/dev/null || true
+docker-compose down -v 2>/dev/null || true
+docker stop vistara-ai-app vistara-ai-db vistara-ai-redis 2>/dev/null || true
+docker rm vistara-ai-app vistara-ai-db vistara-ai-redis 2>/dev/null || true
+docker rmi vistara-ai-app vistara-ai:latest 2>/dev/null || true
+docker volume prune -f 2>/dev/null || true
+docker network prune -f 2>/dev/null || true
 
 # Clean Go module cache for this project - more thorough
 echo "🧼 Cleaning Go module cache..."
