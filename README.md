@@ -1,8 +1,18 @@
-# Vistara AI - Smart Travel Planner
+# Vistara AI - Uniting Journey and Indonesia
 
-Vistara AI is an intelligent travel planning service that creates personalized itineraries using Google's Gemini AI. It integrates seamlessly with the Vistara BE platform to provide comprehensive travel planning solutions.
+## 🌺 Features
 
-## � Quick Start
+- **Cultural AI Assistant**: Intelligent guidance that celebrates Indonesian heritage and traditions
+- **Journey-Culture Integration**: Seamlessly connects travel experiences with cultural learning
+- **Multi-modal Platform**: Supports education, ticketing, navigation, and translation services
+- **Heritage Preservation**: AI-powered content that promotes and preserves Indonesian culture
+- **Authentic Experiences**: Connects visitors with genuine local traditions and communitiesre
+
+Vistara AI is an intelligent service that bridges journeys and Indonesian culture using Google's Gemini AI. It's part of the **Vistara** platform - a comprehensive digital ecosystem that integrates education, ticketing, navigation, and local language translation to preserve, promote, and celebrate Indonesian heritage.
+
+The AI service seamlessly integrates with the Vistara platform to provide culturally-rich experiences that connect people with Indonesia's diverse traditions, heritage sites, and authentic local culture.
+
+## 🚀 Quick Start
 
 ```bash
 # Setup (first time)
@@ -30,64 +40,23 @@ Create `.env` file:
 GEMINI_API_KEY=your_gemini_api_key
 
 # Optional (has defaults)
-PORT=5000
-API_SECRET_KEY=your_api_key
-JWT_SECRET=your_jwt_secret
+PORT=8080
+API_SECRET_KEY=vistara-ai-default-key
+JWT_SECRET=vistara-ai-jwt-secret-change-in-production
 VISTARA_BE_URL=http://localhost:8080
 GO_ENV=development
+GEMINI_MODEL_NAME=gemini-2.5-flash
+LOG_LEVEL=info
+ALLOWED_ORIGINS=*
 ```
 
-## 🔗 API Endpoints
+## � Features
 
-### Health Check
-```http
-GET /api/v1/health
-```
-
-### Smart Travel Planning
-
-**With JWT Authentication:**
-```http
-POST /api/v1/smart-planner
-Authorization: Bearer <jwt_token>
-Content-Type: application/json
-
-{
-  "destination": "Bali",
-  "start_date": "2025-01-15T00:00:00Z",
-  "end_date": "2025-01-20T00:00:00Z",
-  "budget": 5000000,
-  "travel_style": "romantic_couple",
-  "activity_preferences": ["beach", "culture"],
-  "activity_intensity": "balanced"
-}
-```
-
-**Service-to-Service (from Vistara BE):**
-```http
-POST /api/v1/smart-planner
-X-Service: vistara-be
-Content-Type: application/json
-```
-
-### Authentication
-
-**Login:**
-```http
-POST /api/v1/auth/login
-Content-Type: application/json
-
-{
-  "username": "user@example.com",
-  "password": "password"
-}
-```
-
-**Get Profile:**
-```http
-GET /api/v1/auth/profile
-Authorization: Bearer <jwt_token>
-```
+- **Smart Itinerary Planning**: AI-powered travel plans using Google Gemini
+- **Cultural Integration**: Focuses on Indonesian heritage and cultural experiences
+- **Multi-tier Authentication**: Secure user and service-to-service communication
+- **Seamless Integration**: Works with Vistara BE for comprehensive travel solutions
+- **Flexible API**: Supports various authentication methods for different use cases
 
 ## 🛠️ Development
 
@@ -106,6 +75,9 @@ make test-coverage
 
 # Build application
 make build
+
+# Stop development server
+make stop
 ```
 
 ## 🐳 Docker
@@ -120,12 +92,23 @@ make docker-run
 
 ## 🔒 Authentication
 
-Vistara AI uses a multi-tier authentication system:
+Vistara AI uses a secure multi-tier authentication system to ensure proper access control:
 
-1. **Public Endpoints**: Health checks
-2. **JWT Only**: User-specific features  
-3. **Service Only**: Inter-service communication
-4. **Either Auth**: Smart planner (supports both JWT and service auth)
+- **Public Access**: Health checks and basic information
+- **User Authentication**: JWT-based authentication for traveler features
+- **Service Authentication**: API key authentication for inter-service communication
+- **Flexible Security**: Multiple authentication options to support different integration needs
+
+## 🏛️ About Vistara Platform
+
+Vistara is a comprehensive digital ecosystem designed to bridge the gap between modern travel and Indonesia's rich cultural heritage:
+
+- **Education**: Deep cultural learning and interactive heritage storytelling
+- **Ticketing**: Seamless access to cultural sites, museums, and traditional experiences
+- **Navigation**: Culturally-aware routing that highlights heritage along the journey
+- **Translation**: Local language support for authentic cultural immersion
+
+The AI service enhances this ecosystem by providing intelligent assistance that doesn't just guide journeys, but enriches them with cultural meaning and authentic Indonesian experiences.
 
 ## 🧪 Testing
 
@@ -133,41 +116,27 @@ Vistara AI uses a multi-tier authentication system:
 # Test health endpoint
 make test-api
 
-# Test smart planning
+# Test AI functionality
 make test-smart-plan
 
 # Run all tests
 make test
+
+# Reset project to clean state
+make reset-setup
 ```
 
-## 📁 Project Structure
+## 🤝 Integration with Vistara Platform
 
-```
-cmd/api/           # Application entry point
-internal/handler/  # HTTP handlers
-middleware/        # Authentication middleware
-pkg/
-  dto/            # Data transfer objects
-  service/        # Business logic
-  util/           # Helper utilities
-  validator/      # Input validation
-infra/
-  config/         # Configuration
-  logger/         # Logging utilities
-  http/           # HTTP server setup
-```
+Vistara AI serves as the intelligent cultural bridge within the broader Vistara ecosystem:
 
-## 🔧 Make Commands
+- **Cultural Heritage Focus**: Prioritizes authentic Indonesian cultural sites, traditions, and heritage experiences
+- **Community Connection**: Links visitors with local communities, artisans, and cultural practitioners
+- **Educational Journey**: Transforms every interaction into a learning opportunity about Indonesian culture
+- **Language & Tradition**: Supports local languages and traditional practices for authentic cultural exchange
+- **Heritage Preservation**: Contributes to documenting and preserving Indonesia's diverse cultural legacy
 
-Run `make help` to see all available commands.
-
-## 🤝 Integration with Vistara BE
-
-Vistara AI integrates with Vistara BE to:
-- Authenticate users via JWT tokens
-- Fetch verified local businesses
-- Retrieve tourist attractions  
-- Send notifications when plans are generated
+This integration ensures that every experience through Vistara not only creates meaningful moments but actively participates in celebrating and preserving Indonesia's rich cultural tapestry - truly *"Menyatukan Perjalanan dan Budaya Indonesia"*.
 
 ## 📝 License
 
