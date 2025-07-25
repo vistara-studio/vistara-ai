@@ -7,27 +7,30 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/vistara-studio/vistara-ai/infra/config"
 	"github.com/vistara-studio/vistara-ai/pkg/dto"
 )
 
 // AIHistorianService handles AI-powered historical storytelling
 type AIHistorianService struct {
 	geminiService *GeminiService
+	config        *config.Config
 }
 
 // NewAIHistorianService creates a new AI historian service instance
-func NewAIHistorianService(geminiService *GeminiService) *AIHistorianService {
+func NewAIHistorianService(geminiService *GeminiService, cfg *config.Config) *AIHistorianService {
 	return &AIHistorianService{
 		geminiService: geminiService,
+		config:        cfg,
 	}
 }
 
 // GenerateHistoricalStory generates a historical story with a quote for a given location
 func (s *AIHistorianService) GenerateHistoricalStory(location string) (*dto.HistoricalStoryResponse, error) {
 	prompt := s.buildHistorianPrompt(location)
-	
-	// Call the Gemini service to generate the historical story with enhanced prompting for accuracy
-	rawResponse, err := s.geminiService.GenerateTextWithGrounding(prompt, true)
+
+	// Call the Gemini service to generate the historical story with enhanced prompting for accuracy and custom timeout
+	rawResponse, err := s.geminiService.GenerateTextWithTimeoutAndGrounding(prompt, s.config.HistorianTimeout, true)
 	if err != nil {
 		log.Printf("AI Service error during historical story generation: %v", err)
 		return nil, fmt.Errorf("failed to generate historical story: %w", err)
@@ -53,31 +56,24 @@ func (s *AIHistorianService) GenerateHistoricalStory(location string) (*dto.Hist
 	return &response, nil
 }
 
-// buildHistorianPrompt creates the prompt for the AI historian
+// buildHistorianPrompt creates an optimized prompt for the AI historian
 func (s *AIHistorianService) buildHistorianPrompt(location string) string {
-	return fmt.Sprintf(`Objective: Act as an expert AI historian and a creative storyteller, capable of producing structured data.
+	return fmt.Sprintf(`Generate a historical story for %s with authentic Indonesian historical context. RESPOND ENTIRELY IN ENGLISH.
 
-Context: The user has provided a location name: %s. This place has deep historical significance, likely documented in ancient manuscripts, chronicles, or texts.
+Requirements:
+1. Find a verified historical manuscript, text, or archaeological source about %s
+2. Extract a genuine quote from this source as the title (if original is not in English, provide English translation)
+3. Write a compelling story explaining the quote's context and significance IN ENGLISH
+4. Use only credible historical sources and archaeological findings
+5. ALL content must be written in English language
 
-CRITICAL REQUIREMENTS: Use only the most verified, accurate, and authentic historical information. Prioritize reliability and factual accuracy. Draw from established scholarly sources, verified archaeological findings, and authentic historical documents.
-
-Core Task:
-1. Research & Identify: Based on your most comprehensive knowledge, find a specific historical manuscript, ancient text, archaeological finding, or scholarly research directly related to %s. Focus on the most credible and well-documented sources.
-2. Extract a Quote: From the most reliable and authentic source, identify and extract a short, impactful, and genuine quote that captures a key aspect of the location's history, culture, or description. This quote will be the title.
-3. Craft a Narrative: Write a compelling story that explains the context of the quote using verified historical knowledge. Incorporate insights from established archaeological work, peer-reviewed historical analysis, and scholarly consensus. The story should bring the scene described in the quote to life, elaborate on its meaning, and connect it to the broader history of the place for a modern audience.
-4. Adopt Persona: The story (content) should be written from the perspective of an engaging local guide or a village elder sharing a tale enriched by both traditional knowledge and scholarly understanding.
-5. Accuracy Focus: Ensure all historical details are factually correct and based on credible sources. Avoid speculation or unverified claims.
-
-Strict Output Format:
-The entire response must be ONLY a single, clean JSON object with no other text or explanation before or after it. The JSON object must contain exactly two keys:
-- "title": A string containing the direct quote from the manuscript or historical source.
-- "content": A string containing the story that explains and expands upon the quote, incorporating verified historical knowledge and established research findings.
-
-High-Quality Example (for "Trowulan"):
+Output ONLY this JSON format:
 {
-  "title": "Desa-desa makamulya sthananira pranata suraksita...",
-  "content": "This line, which translates to 'The noble villages are well-ordered and safely protected,' comes from the ancient Nagarakretagama manuscript written by Mpu Prapanca in 1365 CE. It isn't just a dry description; it's a window into the soul of the Majapahit capital, Trowulan, under King Hayam Wuruk. Archaeological excavations have revealed that these villages were indeed meticulously planned, with sophisticated water management systems that modern urban planners still study today. Imagine walking through those villages in the 14th century. The manuscript tells us of a city not of chaos, but of careful design. Canals, like silver ribbons, crisscrossed the land, not just for travel but to nourish the lush gardens surrounding the brick homes of officials and priests. This quote reveals a kingdom that valued order and security, where the hum of a bustling, prosperous city was a testament to the power and wisdom of its rulers. The story of Trowulan isn't just in its grand temples, but in the quiet pride of these well-kept villages, a truth captured forever in that single, elegant line from one of Java's most important historical texts."
-}`, location, location)
+  "title": "Direct quote from historical source (in English or English translation)",
+  "content": "Engaging story in English explaining the quote's historical context and significance. Write from perspective of knowledgeable local guide speaking to international visitors. Include verified historical details and archaeological insights. Use clear, engaging English prose."
+}
+
+IMPORTANT: Write everything in English. Focus on authenticity, accuracy, and engaging storytelling for international audiences.`, location, location)
 }
 
 // cleanAIResponse removes markdown code blocks and other formatting issues from AI response
