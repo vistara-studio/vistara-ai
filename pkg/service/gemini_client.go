@@ -32,6 +32,16 @@ func NewGeminiService(cfg *config.Config) *GeminiService {
 
 // GenerateText generates text using Gemini AI
 func (g *GeminiService) GenerateText(promptText string) (string, error) {
+	return g.GenerateTextWithGrounding(promptText, false)
+}
+
+// GenerateTextWithGrounding generates text using Gemini AI with optional search grounding
+func (g *GeminiService) GenerateTextWithGrounding(promptText string, useGrounding bool) (string, error) {
+	return g.GenerateTextWithSettings(promptText, useGrounding, true)
+}
+
+// GenerateTextWithSettings generates text using Gemini AI with configurable settings
+func (g *GeminiService) GenerateTextWithSettings(promptText string, useGrounding bool, jsonOutput bool) (string, error) {
 	ctx := context.Background()
 
 	// Get model name from config
@@ -40,7 +50,14 @@ func (g *GeminiService) GenerateText(promptText string) (string, error) {
 		modelName = "gemini-1.5-flash"
 	}
 
-	log.Printf("Using Gemini model: %s for travel planning", modelName)
+	var logMessage string
+	if useGrounding && g.config.EnableSearchGrounding {
+		logMessage = "with search grounding"
+	} else {
+		logMessage = "without grounding"
+	}
+	log.Printf("Using Gemini model: %s %s", modelName, logMessage)
+	
 	model := g.client.GenerativeModel(modelName)
 
 	// Configure generation settings for consistent JSON output
@@ -56,10 +73,26 @@ func (g *GeminiService) GenerateText(promptText string) (string, error) {
 		MaxOutputTokens: &maxTokens,
 	}
 
-	// Add system instruction for better JSON compliance
+	// Enhanced system instruction for better output format and data accuracy
+	var systemInstruction string
+	if jsonOutput {
+		if useGrounding && g.config.EnableSearchGrounding {
+			systemInstruction = "You are an AI assistant that MUST respond ONLY with valid JSON. Never include any text outside the JSON structure. Start with { and end with }. Use your most comprehensive and up-to-date knowledge. Prioritize the most accurate, verified, and recent information from reliable academic sources, official records, and scholarly publications. When providing historical information, cite authentic manuscripts, archaeological findings, and peer-reviewed research."
+		} else {
+			systemInstruction = "You are an AI assistant that MUST respond ONLY with valid JSON. Never include any text outside the JSON structure. Start with { and end with }."
+		}
+	} else {
+		if useGrounding && g.config.EnableSearchGrounding {
+			systemInstruction = "You are a precise AI assistant. Follow the user's instructions exactly. Use your most comprehensive and up-to-date knowledge. Prioritize accuracy and authenticity. Return only what is requested, no additional text or explanations."
+		} else {
+			systemInstruction = "You are a precise AI assistant. Follow the user's instructions exactly. Return only what is requested, no additional text or explanations."
+		}
+	}
+
+	// Add system instruction
 	model.SystemInstruction = &genai.Content{
 		Parts: []genai.Part{
-			genai.Text("You are a travel planning AI that MUST respond ONLY with valid JSON. Never include any text outside the JSON structure. Start with { and end with }."),
+			genai.Text(systemInstruction),
 		},
 	}
 

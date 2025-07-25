@@ -23,6 +23,11 @@ func NewSmartPlannerService(geminiService *GeminiService, integrationService *In
 
 // CreatePlan creates a personalized travel plan using AI with integration data
 func (s *SmartPlannerService) CreatePlan(userInput *dto.SmartPlanRequest, duration int, userToken string) (string, error) {
+	return s.CreatePlanWithGrounding(userInput, duration, userToken, false)
+}
+
+// CreatePlanWithGrounding creates a personalized travel plan using AI with integration data and optional search grounding
+func (s *SmartPlannerService) CreatePlanWithGrounding(userInput *dto.SmartPlanRequest, duration int, userToken string, useGrounding bool) (string, error) {
 	// Fetch additional data from vistara-be if integration is available
 	var localBusinesses []dto.LocalBusiness
 	var attractions []dto.TouristAttraction
@@ -45,10 +50,24 @@ func (s *SmartPlannerService) CreatePlan(userInput *dto.SmartPlanRequest, durati
 
 	// Format the prompt using validated user input, calculated duration, and integration data
 	prompt := util.FormatGeminiPromptWithIntegration(userInput, duration, localBusinesses, attractions)
-	log.Println("Formatted prompt for AI Smart Planner generation with integration data")
+	
+	var logMessage string
+	if useGrounding {
+		logMessage = "with search grounding for real-time destination information"
+	} else {
+		logMessage = "with integration data"
+	}
+	log.Printf("Formatted prompt for AI Smart Planner generation %s", logMessage)
 
-	// Call the Gemini service to generate the itinerary
-	itinerary, err := s.geminiService.GenerateText(prompt)
+	// Call the Gemini service to generate the itinerary with optional grounding
+	var itinerary string
+	var err error
+	if useGrounding {
+		itinerary, err = s.geminiService.GenerateTextWithGrounding(prompt, true)
+	} else {
+		itinerary, err = s.geminiService.GenerateText(prompt)
+	}
+	
 	if err != nil {
 		log.Printf("AI Service error during Smart Planner creation: %v", err)
 		return "", err
