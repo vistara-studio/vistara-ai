@@ -3,6 +3,7 @@ package config
 import (
 	"log"
 	"os"
+	"strconv"
 
 	"github.com/joho/godotenv"
 )
@@ -24,6 +25,25 @@ type Config struct {
 
 	// Service integration
 	VistaraBeURL string
+	
+	// Database configuration
+	DatabaseURL      string
+	DBHost          string
+	DBPort          string
+	DBName          string
+	DBUser          string
+	DBPassword      string
+	DBMaxConnections int
+	DBSSLMode       string
+	
+	// Supabase Storage configuration
+	SupabaseURL    string
+	SupabaseKey    string
+	SupabaseBucket string
+	
+	// Storage configuration
+	StorageType string
+	StoragePath string
 }
 
 // Load loads configuration from environment variables
@@ -43,6 +63,25 @@ func Load() (*Config, error) {
 		JWTSecret:       getEnv("JWT_SECRET", "vistara-ai-jwt-secret-change-in-production"),
 		AllowedOrigins:  getEnv("ALLOWED_ORIGINS", "*"),
 		VistaraBeURL:    getEnv("VISTARA_BE_URL", "http://localhost:8080"),
+		
+		// Database configuration
+		DatabaseURL:      getEnv("DATABASE_URL", ""),
+		DBHost:          getEnv("DB_HOST", "localhost"),
+		DBPort:          getEnv("DB_PORT", "5432"),
+		DBName:          getEnv("DB_NAME", "vistara_ai"),
+		DBUser:          getEnv("DB_USER", "vistara"),
+		DBPassword:      getEnv("DB_PASSWORD", "vistara123"),
+		DBMaxConnections: getEnvAsInt("DB_MAX_CONNECTIONS", 25),
+		DBSSLMode:       getEnv("DB_SSL_MODE", "disable"),
+		
+		// Supabase Storage configuration
+		SupabaseURL:    getEnv("SUPABASE_URL", ""),
+		SupabaseKey:    getEnv("SUPABASE_KEY", ""),
+		SupabaseBucket: getEnv("SUPABASE_BUCKET", "vistara-bucket"),
+		
+		// Storage configuration
+		StorageType: getEnv("STORAGE_TYPE", "local"),
+		StoragePath: getEnv("STORAGE_PATH", "./storage"),
 	}
 
 	// Validate critical settings
@@ -69,4 +108,19 @@ func getEnv(key, defaultValue string) string {
 		return value
 	}
 	return defaultValue
+}
+
+func getEnvAsInt(key string, defaultValue int) int {
+	valueStr := getEnv(key, "")
+	if valueStr == "" {
+		return defaultValue
+	}
+	
+	value, err := strconv.Atoi(valueStr)
+	if err != nil {
+		log.Printf("Warning: Invalid integer value for %s, using default %d", key, defaultValue)
+		return defaultValue
+	}
+	
+	return value
 }
