@@ -2,10 +2,13 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"log"
+	"time"
 
 	"github.com/google/generative-ai-go/genai"
 	"github.com/vistara-studio/vistara-ai/infra/config"
+	"github.com/vistara-studio/vistara-ai/pkg/dto"
 	"google.golang.org/api/option"
 )
 
@@ -88,6 +91,42 @@ func (g *GeminiService) GenerateText(promptText string) (string, error) {
 
 	log.Printf("Unexpected Gemini response structure: %+v", resp)
 	return "", &GeminiError{Message: "Could not extract text content from Gemini response"}
+}
+
+// GenerateSmartPlan generates a smart travel plan using Gemini AI
+func (g *GeminiService) GenerateSmartPlan(req *dto.SmartPlanRequest) (*dto.SmartPlanResponse, error) {
+	// Create prompt for smart planning
+	prompt := fmt.Sprintf(`Generate a comprehensive travel plan for %s from %s to %s. 
+Budget: %v, Travel Style: %v, Activity Intensity: %v
+Activity Preferences: %v
+
+Respond with a detailed JSON itinerary including daily activities, timings, estimated costs, and recommendations.`, 
+		req.Destination, 
+		req.StartDate.Format("2006-01-02"), 
+		req.EndDate.Format("2006-01-02"),
+		req.Budget,
+		req.TravelStyle,
+		req.ActivityIntensity,
+		req.ActivityPreferences)
+
+	// Generate text using existing method
+	responseText, err := g.GenerateText(prompt)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate smart plan: %w", err)
+	}
+
+	// Return response
+	return &dto.SmartPlanResponse{
+		Plan:              responseText,
+		Destination:       req.Destination,
+		StartDate:         req.StartDate,
+		EndDate:           req.EndDate,
+		Budget:            req.Budget,
+		TravelStyle:       req.TravelStyle,
+		ActivityIntensity: req.ActivityIntensity,
+		GeneratedAt:       time.Now(),
+		UserID:            req.UserID,
+	}, nil
 }
 
 // Close closes the Gemini service client
