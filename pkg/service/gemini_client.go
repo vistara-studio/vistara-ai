@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"log"
+	"time"
 
 	"github.com/google/generative-ai-go/genai"
 	"github.com/vistara-studio/vistara-ai/infra/config"
@@ -32,22 +33,34 @@ func NewGeminiService(cfg *config.Config) *GeminiService {
 
 // GenerateText generates text using Gemini AI
 func (g *GeminiService) GenerateText(promptText string) (string, error) {
-	return g.GenerateTextWithGrounding(promptText, false)
+	return g.GenerateTextWithTimeout(promptText, g.config.RequestTimeout)
 }
 
 // GenerateTextWithGrounding generates text using Gemini AI with optional search grounding
 func (g *GeminiService) GenerateTextWithGrounding(promptText string, useGrounding bool) (string, error) {
-	return g.GenerateTextWithSettings(promptText, useGrounding, true)
+	return g.GenerateTextWithTimeoutAndGrounding(promptText, g.config.RequestTimeout, useGrounding)
 }
 
-// GenerateTextWithSettings generates text using Gemini AI with configurable settings
-func (g *GeminiService) GenerateTextWithSettings(promptText string, useGrounding bool, jsonOutput bool) (string, error) {
-	ctx := context.Background()
+// GenerateTextWithTimeout generates text using Gemini AI with custom timeout
+func (g *GeminiService) GenerateTextWithTimeout(promptText string, timeout time.Duration) (string, error) {
+	return g.GenerateTextWithTimeoutAndGrounding(promptText, timeout, false)
+}
+
+// GenerateTextWithTimeoutAndGrounding generates text using Gemini AI with custom timeout and optional grounding
+func (g *GeminiService) GenerateTextWithTimeoutAndGrounding(promptText string, timeout time.Duration, useGrounding bool) (string, error) {
+	return g.GenerateTextWithAdvancedSettings(promptText, timeout, useGrounding, true)
+}
+
+// GenerateTextWithAdvancedSettings generates text using Gemini AI with configurable settings
+func (g *GeminiService) GenerateTextWithAdvancedSettings(promptText string, timeout time.Duration, useGrounding bool, jsonOutput bool) (string, error) {
+	// Create context with custom timeout
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
 
 	// Get model name from config
 	modelName := g.config.GeminiModelName
 	if modelName == "" {
-		modelName = "gemini-1.5-flash"
+		modelName = "gemini-2.5-flash"
 	}
 
 	var logMessage string
@@ -56,37 +69,29 @@ func (g *GeminiService) GenerateTextWithSettings(promptText string, useGrounding
 	} else {
 		logMessage = "without grounding"
 	}
-	log.Printf("Using Gemini model: %s %s", modelName, logMessage)
-	
+	log.Printf("Using Gemini model: %s %s (timeout: %v)", modelName, logMessage, timeout)
+
 	model := g.client.GenerativeModel(modelName)
 
-	// Configure generation settings for consistent JSON output
-	temperature := float32(0.1)
-	topP := float32(0.8)
-	topK := int32(40)
-	maxTokens := int32(8192)
+	// Optimized generation settings for gemini-2.5-flash
+	temperature := float32(0.2) // Balanced for quality and speed
+	topP := float32(0.9)        // High for diverse responses
+	topK := int32(30)           // Moderate for good performance
+	maxTokens := g.config.MaxTokens
 
 	model.GenerationConfig = genai.GenerationConfig{
-		Temperature:     &temperature, // Lower temperature for more consistent responses
+		Temperature:     &temperature,
 		TopP:            &topP,
 		TopK:            &topK,
 		MaxOutputTokens: &maxTokens,
 	}
 
-	// Enhanced system instruction for better output format and data accuracy
+	// Optimized system instructions
 	var systemInstruction string
 	if jsonOutput {
-		if useGrounding && g.config.EnableSearchGrounding {
-			systemInstruction = "You are an AI assistant that MUST respond ONLY with valid JSON. Never include any text outside the JSON structure. Start with { and end with }. Use your most comprehensive and up-to-date knowledge. Prioritize the most accurate, verified, and recent information from reliable academic sources, official records, and scholarly publications. When providing historical information, cite authentic manuscripts, archaeological findings, and peer-reviewed research."
-		} else {
-			systemInstruction = "You are an AI assistant that MUST respond ONLY with valid JSON. Never include any text outside the JSON structure. Start with { and end with }."
-		}
+		systemInstruction = "You are an expert AI assistant. Respond ONLY with valid JSON. No explanations, no markdown, just clean JSON starting with { and ending with }."
 	} else {
-		if useGrounding && g.config.EnableSearchGrounding {
-			systemInstruction = "You are a precise AI assistant. Follow the user's instructions exactly. Use your most comprehensive and up-to-date knowledge. Prioritize accuracy and authenticity. Return only what is requested, no additional text or explanations."
-		} else {
-			systemInstruction = "You are a precise AI assistant. Follow the user's instructions exactly. Return only what is requested, no additional text or explanations."
-		}
+		systemInstruction = "You are an expert AI assistant. Provide direct, concise responses. Return only what is requested."
 	}
 
 	// Add system instruction
@@ -96,7 +101,7 @@ func (g *GeminiService) GenerateTextWithSettings(promptText string, useGrounding
 		},
 	}
 
-	// Generate content
+	// Generate content with timeout
 	resp, err := model.GenerateContent(ctx, genai.Text(promptText))
 	if err != nil {
 		log.Printf("Error during Gemini API call: %v", err)

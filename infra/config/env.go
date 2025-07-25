@@ -3,6 +3,8 @@ package config
 import (
 	"log"
 	"os"
+	"strconv"
+	"time"
 
 	"github.com/joho/godotenv"
 )
@@ -27,6 +29,16 @@ type Config struct {
 
 	// Search grounding configuration
 	EnableSearchGrounding bool
+
+	// Performance optimization
+	RequestTimeout     time.Duration
+	MaxTokens          int32
+	ConcurrentRequests int
+
+	// Service-specific timeouts
+	SmartPlannerTimeout time.Duration
+	HistorianTimeout    time.Duration
+	NusalingoTimeout    time.Duration
 }
 
 // Load loads configuration from environment variables
@@ -39,7 +51,7 @@ func Load() (*Config, error) {
 	cfg := &Config{
 		APIKey:                getEnv("API_SECRET_KEY", "vistara-ai-default-key"),
 		GeminiAPIKey:          getEnv("GEMINI_API_KEY", ""),
-		GeminiModelName:       getEnv("GEMINI_MODEL_NAME", "gemini-2.0-flash-exp"),
+		GeminiModelName:       getEnv("GEMINI_MODEL_NAME", "gemini-2.5-flash"),
 		Port:                  getEnv("PORT", "8080"),
 		Environment:           getEnv("GO_ENV", "development"),
 		LogLevel:              getEnv("LOG_LEVEL", "info"),
@@ -47,6 +59,12 @@ func Load() (*Config, error) {
 		AllowedOrigins:        getEnv("ALLOWED_ORIGINS", "*"),
 		VistaraBeURL:          getEnv("VISTARA_BE_URL", "http://localhost:8080"),
 		EnableSearchGrounding: getEnvBool("ENABLE_SEARCH_GROUNDING", true),
+		RequestTimeout:        time.Duration(getEnvInt("REQUEST_TIMEOUT_SECONDS", 60)) * time.Second,
+		MaxTokens:             int32(getEnvInt("MAX_TOKENS", 4096)),
+		ConcurrentRequests:    getEnvInt("CONCURRENT_REQUESTS", 3),
+		SmartPlannerTimeout:   time.Duration(getEnvInt("SMART_PLANNER_TIMEOUT_SECONDS", 90)) * time.Second,
+		HistorianTimeout:      time.Duration(getEnvInt("HISTORIAN_TIMEOUT_SECONDS", 45)) * time.Second,
+		NusalingoTimeout:      time.Duration(getEnvInt("NUSALINGO_TIMEOUT_SECONDS", 30)) * time.Second,
 	}
 
 	// Validate critical settings
@@ -79,6 +97,15 @@ func getEnv(key, defaultValue string) string {
 func getEnvBool(key string, defaultValue bool) bool {
 	if value := os.Getenv(key); value != "" {
 		return value == "true" || value == "1" || value == "yes"
+	}
+	return defaultValue
+}
+
+func getEnvInt(key string, defaultValue int) int {
+	if value := os.Getenv(key); value != "" {
+		if intValue, err := strconv.Atoi(value); err == nil {
+			return intValue
+		}
 	}
 	return defaultValue
 }
