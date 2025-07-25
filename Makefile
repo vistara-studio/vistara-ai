@@ -153,6 +153,28 @@ test-smart-plan:
 		-d '{"destination":"Bali","start_date":"2025-01-15T00:00:00Z","end_date":"2025-01-20T00:00:00Z","budget":5000000,"travel_style":"romantic_couple","activity_preferences":["beach","culture"],"activity_intensity":"balanced"}' \
 		| jq . || echo "API not responding or jq not installed"
 
+## test-historian: Test AI historian endpoint
+test-historian:
+	@echo "🧪 Testing AI historian endpoint..."
+	@curl -X POST http://localhost:$(PORT)/api/v1/historical-story \
+		-H "Content-Type: application/json" \
+		-H "Authorization: Bearer test-jwt-token" \
+		-d '{"location":"Borobudur Temple","additional_context":"ancient Buddhist temple"}' \
+		| jq . || echo "API not responding or jq not installed"
+
+## test-nusalingo: Test Nusalingo endpoint
+test-nusalingo:
+	@echo "🧪 Testing Nusalingo endpoint..."
+	@curl -X POST http://localhost:$(PORT)/api/v1/nusalingo \
+		-H "Content-Type: application/json" \
+		-H "Authorization: Bearer test-jwt-token" \
+		-d '{"input_text":"Halo, apa kabar?","target_language":"en","source_language":"id"}' \
+		| jq . || echo "API not responding or jq not installed"
+
+## test-all-endpoints: Test all API endpoints
+test-all-endpoints: test-api test-smart-plan test-historian test-nusalingo
+	@echo "✅ All API endpoint tests completed"
+
 ## mod-tidy: Tidy Go modules
 mod-tidy:
 	@echo "📦 Tidying Go modules..."

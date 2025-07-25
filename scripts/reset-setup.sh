@@ -73,11 +73,22 @@ JWT_SECRET=your_jwt_secret_here
 GEMINI_API_KEY=your_gemini_api_key_here
 GEMINI_MODEL_NAME=gemini-2.5-flash
 
+# Service Timeout Configuration
+SMART_PLANNER_TIMEOUT=120
+AI_HISTORIAN_TIMEOUT=60
+NUSALINGO_TIMEOUT=30
+GEMINI_DEFAULT_TIMEOUT=30
+
+# Performance Configuration
+MAX_CONCURRENT_REQUESTS=10
+REQUEST_TIMEOUT=300
+
 # CORS Configuration for integration
 ALLOWED_ORIGINS=http://localhost:8080,http://localhost:3000
 
 # Integration with Vistara BE
 VISTARA_BE_URL=http://localhost:8080
+VISTARA_BE_JWT_SECRET=your_vistara_be_jwt_secret_here
 EOF
 fi
 

@@ -81,3 +81,22 @@ coverage.html
 # Local development
 local/
 scripts/local/
+
+# AI Service specific
+*.model
+ai-cache/
+gemini-cache/
+historical-stories-cache/
+nusalingo-cache/
+
+# Debug and development
+debug
+*.debug
+
+# Performance profiling
+*.prof
+*.pprof
+
+# Terminal and task outputs
+terminal-output.log
+task-output.log
