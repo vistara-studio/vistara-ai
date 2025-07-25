@@ -1,11 +1,7 @@
 package handler
 
 import (
-	"encoding/json"
 	"fmt"
-	"log"
-	"regexp"
-	"strings"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -17,127 +13,103 @@ import (
 	"github.com/vistara-studio/vistara-ai/pkg/validator"
 )
 
-// AIHandler handles AI-related HTTP requests for travel planning
+// AIHandler handles general AI-related HTTP requests
 type AIHandler struct {
-	smartPlannerService *service.SmartPlannerService
-	integrationService  *service.IntegrationService
-	logger              *logger.Logger
-	config              *config.Config
+	aiHistorianService *service.AIHistorianService
+	nusalingoService   *service.NusalingoService
+	logger             *logger.Logger
+	config             *config.Config
 }
 
 // NewAIHandler creates a new instance of AIHandler
-func NewAIHandler(smartPlannerService *service.SmartPlannerService, integrationService *service.IntegrationService, logger *logger.Logger, cfg *config.Config) *AIHandler {
+func NewAIHandler(aiHistorianService *service.AIHistorianService, nusalingoService *service.NusalingoService, logger *logger.Logger, cfg *config.Config) *AIHandler {
 	return &AIHandler{
-		smartPlannerService: smartPlannerService,
-		integrationService:  integrationService,
-		logger:              logger,
-		config:              cfg,
+		aiHistorianService: aiHistorianService,
+		nusalingoService:   nusalingoService,
+		logger:             logger,
+		config:             cfg,
 	}
 }
 
-// GenerateSmartPlan handles smart travel planning requests with AI-powered itinerary generation
-func (h *AIHandler) GenerateSmartPlan(c *fiber.Ctx) error {
+// GenerateHistoricalStory handles historical story generation requests
+func (h *AIHandler) GenerateHistoricalStory(c *fiber.Ctx) error {
 	// Parse request body
-	var req dto.SmartPlanRequest
+	var req dto.HistoricalStoryRequest
 	if err := c.BodyParser(&req); err != nil {
-		return util.ResponseWithMessage(c, "Invalid JSON input", fiber.StatusBadRequest, false)
+		return util.ResponseWithMessage(c, "Invalid request format", fiber.StatusBadRequest, false)
 	}
 
 	// Validate request
-	if validationErrors := validator.ValidateStruct(&req); validationErrors != nil {
-		return util.ResponseWithData(c, validationErrors, "Input validation failed", fiber.StatusBadRequest, false)
-	}
-
-	// Custom validation for dates
-	if err := h.validateSmartPlanRequest(&req); err != nil {
+	if err := h.validateHistoricalStoryRequest(&req); err != nil {
 		return util.ResponseWithMessage(c, err.Error(), fiber.StatusBadRequest, false)
 	}
 
-	// Calculate duration from dates
-	duration := int(req.EndDate.Sub(req.StartDate).Hours()/24) + 1
-	if duration <= 0 {
-		return util.ResponseWithMessage(c, "End date must be after start date", fiber.StatusBadRequest, false)
-	}
+	h.logger.Info("Historical story request validated for location: " + req.Location)
 
-	log.Printf("Smart plan request validated for destination: %s, duration: %d days", req.Destination, duration)
-
-	// Get token from request for vistara-be integration
-	var userToken string
-	authHeader := c.Get("Authorization")
-	if authHeader != "" && strings.HasPrefix(authHeader, "Bearer ") {
-		userToken = strings.TrimPrefix(authHeader, "Bearer ")
-	}
-
-	// Generate smart plan using AI service with calculated duration and user token
-	rawItinerary, err := h.smartPlannerService.CreatePlan(&req, duration, userToken)
+	// Generate historical story using AI service
+	story, err := h.aiHistorianService.GenerateHistoricalStory(req.Location)
 	if err != nil {
-		log.Printf("AI Service error during Smart Plan creation: %v", err)
-		return util.ResponseWithMessage(c, "AI Smart Planner service is currently unavailable", fiber.StatusServiceUnavailable, false)
+		h.logger.Error("AI Service error during historical story generation: " + err.Error())
+		return util.ResponseWithMessage(c, "AI historian service is currently unavailable", fiber.StatusServiceUnavailable, false)
 	}
 
-	// Clean the response from markdown code blocks
-	cleanedItinerary := h.cleanAIResponse(rawItinerary)
+	// Set additional response fields
+	story.Location = req.Location
+	story.GeneratedAt = time.Now()
 
-	// Parse and validate JSON response
-	var parsedItinerary map[string]interface{}
-	if err := json.Unmarshal([]byte(cleanedItinerary), &parsedItinerary); err != nil {
-		log.Printf("Failed to parse AI response as JSON: %v", err)
-		log.Printf("Raw response: %s", rawItinerary)
-		log.Printf("Cleaned response: %s", cleanedItinerary)
-		return util.ResponseWithMessage(c, "AI service returned invalid response format", fiber.StatusInternalServerError, false)
+	// Return successful response
+	return util.ResponseWithData(c, story, "Historical story generated successfully", fiber.StatusOK, true)
+}
+
+// TranslateText handles language translation requests via Nusalingo
+func (h *AIHandler) TranslateText(c *fiber.Ctx) error {
+	// Parse request body
+	var req dto.NusalingoRequest
+	if err := c.BodyParser(&req); err != nil {
+		return util.ResponseWithMessage(c, "Invalid request format", fiber.StatusBadRequest, false)
+	}
+
+	// Validate request
+	if err := h.validateNusalingoRequest(&req); err != nil {
+		return util.ResponseWithMessage(c, err.Error(), fiber.StatusBadRequest, false)
+	}
+
+	h.logger.Info(fmt.Sprintf("Translation request validated: %s to %s", req.FromLanguage, req.ToLanguage))
+
+	// Translate text using Nusalingo service
+	translatedText, err := h.nusalingoService.TranslateText(&req)
+	if err != nil {
+		h.logger.Error("AI Service error during translation: " + err.Error())
+		return util.ResponseWithMessage(c, "Nusalingo translation service is currently unavailable", fiber.StatusServiceUnavailable, false)
 	}
 
 	// Prepare response
-	response := dto.SmartPlanResponse{
-		Plan:              parsedItinerary,
-		Destination:       req.Destination,
-		StartDate:         req.StartDate,
-		EndDate:           req.EndDate,
-		Budget:            req.Budget,
-		TravelStyle:       req.TravelStyle,
-		ActivityIntensity: req.ActivityIntensity,
-		GeneratedAt:       time.Now(),
-		UserID:            req.UserID,
+	response := &dto.NusalingoResponse{
+		TranslatedText: translatedText,
+		FromLanguage:   req.FromLanguage,
+		ToLanguage:     req.ToLanguage,
+		OriginalText:   req.Text,
+		GeneratedAt:    time.Now(),
 	}
 
-	return util.ResponseWithData(c, response, "Smart plan generated successfully", fiber.StatusOK, true)
+	// Return successful response
+	return util.ResponseWithData(c, response, "Translation completed successfully", fiber.StatusOK, true)
 }
 
-// validateSmartPlanRequest validates the smart plan request
-func (h *AIHandler) validateSmartPlanRequest(req *dto.SmartPlanRequest) error {
-	// Calculate duration from dates
-	duration := int(req.EndDate.Sub(req.StartDate).Hours()/24) + 1
-
-	// Check if end date is after start date
-	if req.EndDate.Before(req.StartDate) || req.EndDate.Equal(req.StartDate) {
-		return fmt.Errorf("end date must be after start date")
+// validateHistoricalStoryRequest validates the historical story request
+func (h *AIHandler) validateHistoricalStoryRequest(req *dto.HistoricalStoryRequest) error {
+	validationErrors := validator.ValidateStruct(req)
+	if validationErrors != nil {
+		return fmt.Errorf("validation failed: %v", validationErrors)
 	}
-
-	// Check minimum and maximum trip duration
-	if duration < 1 {
-		return fmt.Errorf("trip duration must be at least 1 day")
-	}
-	if duration > 30 {
-		return fmt.Errorf("trip duration cannot exceed 30 days")
-	}
-
 	return nil
 }
 
-// cleanAIResponse removes markdown code blocks and other formatting issues from AI response
-func (h *AIHandler) cleanAIResponse(response string) string {
-	// Remove markdown code blocks (```json and ```)
-	re := regexp.MustCompile("```(?:json)?\\s*")
-	cleaned := re.ReplaceAllString(response, "")
-
-	// Remove trailing ```
-	cleaned = strings.TrimSuffix(cleaned, "```")
-
-	// Trim whitespace
-	cleaned = strings.TrimSpace(cleaned)
-
-	// Remove any leading/trailing backticks
-	cleaned = strings.Trim(cleaned, "`")
-
-	return cleaned
+// validateNusalingoRequest validates the Nusalingo translation request
+func (h *AIHandler) validateNusalingoRequest(req *dto.NusalingoRequest) error {
+	validationErrors := validator.ValidateStruct(req)
+	if validationErrors != nil {
+		return fmt.Errorf("validation failed: %v", validationErrors)
+	}
+	return nil
 }
