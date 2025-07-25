@@ -127,35 +127,97 @@ Create a complete %d-day itinerary for %s focusing on %s activities with %s inte
 	)
 }
 
-// FormatGeminiPromptWithIntegration creates a detailed prompt with integration data from vistara-be
-func FormatGeminiPromptWithIntegration(userInput *dto.SmartPlanRequest, duration int, businesses []dto.LocalBusiness, attractions []dto.TouristAttraction) string {
-	// Start with base prompt
-	basePrompt := FormatGeminiPrompt(userInput, duration)
+// FormatOptimizedGeminiPrompt creates an optimized prompt for faster Gemini AI response
+func FormatOptimizedGeminiPrompt(userInput *dto.SmartPlanRequest, duration int, businesses []dto.LocalBusiness, attractions []dto.TouristAttraction) string {
+	promptTemplate := `Create a %d-day Indonesia travel itinerary for %s. JSON only.
 
-	// Add integration data if available
+Details: %s to %s, Budget: IDR %s, Preferences: %s, Style: %s, Intensity: %s
+
+Format:
+{
+  "itinerary": [
+    {
+      "day": 1,
+      "date": "YYYY-MM-DD",
+      "activities": [
+        {
+          "time": "HH:MM",
+          "activity": "Name",
+          "location": "Place",
+          "duration": "X hours",
+          "cost": "IDR amount",
+          "category": "nature|culture|culinary|shopping"
+        }
+      ],
+      "daily_budget": "IDR amount"
+    }
+  ],
+  "summary": {
+    "total_cost": "IDR range",
+    "highlights": ["Top 3 experiences"],
+    "tips": ["Essential tips"]
+  }
+}`
+
+	// Quick data preparation
+	startDate := userInput.StartDate.Format("2006-01-02")
+	endDate := userInput.EndDate.Format("2006-01-02")
+	budget := "Not specified"
+	if userInput.Budget != nil {
+		budget = fmt.Sprintf("%.0f", *userInput.Budget)
+	}
+
+	preferences := "general"
+	if len(userInput.ActivityPreferences) > 0 {
+		preferences = fmt.Sprintf("%v", userInput.ActivityPreferences)
+	}
+
+	style := "balanced"
+	if userInput.TravelStyle != nil {
+		style = *userInput.TravelStyle
+	}
+
+	intensity := "moderate"
+	if userInput.ActivityIntensity != nil {
+		intensity = *userInput.ActivityIntensity
+	}
+
+	basePrompt := fmt.Sprintf(promptTemplate, duration, userInput.Destination,
+		startDate, endDate, budget, preferences, style, intensity)
+
+	// Add top verified places if available (max 3 each for efficiency)
 	if len(businesses) > 0 || len(attractions) > 0 {
-		additionalInfo := "\n\n**INTEGRATION DATA - USE THESE VERIFIED BUSINESSES AND ATTRACTIONS:**\n"
+		verified := "\n\nInclude if relevant:"
 
 		if len(businesses) > 0 {
-			additionalInfo += "\nVerified Local Businesses:\n"
-			for _, business := range businesses {
-				additionalInfo += fmt.Sprintf("- %s (%s): %s - %s\n",
-					business.Name, business.Type, business.Description, business.Address)
+			verified += " Businesses: "
+			limit := 3
+			if len(businesses) < limit {
+				limit = len(businesses)
+			}
+			for i, b := range businesses[:limit] {
+				if i > 0 {
+					verified += ", "
+				}
+				verified += b.Name
 			}
 		}
 
 		if len(attractions) > 0 {
-			additionalInfo += "\nVerified Tourist Attractions:\n"
-			for _, attraction := range attractions {
-				additionalInfo += fmt.Sprintf("- %s (%s): %s - %s\n",
-					attraction.Name, attraction.Type, attraction.Description, attraction.Address)
+			verified += " Attractions: "
+			limit := 3
+			if len(attractions) < limit {
+				limit = len(attractions)
+			}
+			for i, a := range attractions[:limit] {
+				if i > 0 {
+					verified += ", "
+				}
+				verified += a.Name
 			}
 		}
 
-		additionalInfo += "\nPrioritize including these verified businesses and attractions in your itinerary when relevant to user preferences.\n"
-
-		// Append additional info to base prompt
-		basePrompt = basePrompt + additionalInfo
+		basePrompt += verified
 	}
 
 	return basePrompt

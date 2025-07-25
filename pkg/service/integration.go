@@ -30,7 +30,7 @@ func NewIntegrationService(cfg *config.Config) *IntegrationService {
 // FetchLocalBusinesses retrieves local businesses from vistara-be API
 func (s *IntegrationService) FetchLocalBusinesses(destination string, businessType string, userToken string) ([]dto.LocalBusiness, error) {
 	url := fmt.Sprintf("%s/api/locals", s.config.VistaraBeURL)
-	
+
 	// Create HTTP request
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
@@ -58,7 +58,7 @@ func (s *IntegrationService) FetchLocalBusinesses(destination string, businessTy
 		// Use API key as Bearer token for service-to-service authentication
 		req.Header.Set("Authorization", "Bearer "+s.config.APIKey)
 		req.Header.Set("X-API-Key", s.config.APIKey)
-	}	// Execute HTTP request
+	} // Execute HTTP request
 	resp, err := s.httpClient.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch local businesses: %w", err)
@@ -100,7 +100,7 @@ func (s *IntegrationService) FetchTouristAttractions(destination string, userTok
 	// Set request headers
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("X-Service", "vistara-ai")
-	
+
 	// Use JWT token if provided, otherwise use service API key as Bearer token
 	if userToken != "" {
 		req.Header.Set("Authorization", "Bearer "+userToken)

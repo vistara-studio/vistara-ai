@@ -60,9 +60,9 @@ func main() {
 	// Initialize AI services
 	geminiService := service.NewGeminiService(cfg)
 	integrationService := service.NewIntegrationService(cfg)
-	smartPlannerService := service.NewSmartPlannerService(geminiService, integrationService)
-	aiHistorianService := service.NewAIHistorianService(geminiService)
-	nusalingoService := service.NewNusalingoService(geminiService)
+	smartPlannerService := service.NewSmartPlannerService(geminiService, integrationService, cfg)
+	aiHistorianService := service.NewAIHistorianService(geminiService, cfg)
+	nusalingoService := service.NewNusalingoService(geminiService, cfg)
 	authService := service.NewAuthService(cfg)
 
 	// Initialize handlers
@@ -93,7 +93,8 @@ func setupRoutes(app *fiber.App, smartPlannerHandler *handler.SmartPlannerHandle
 
 	// Auth routes (no authentication required)
 	auth := api.Group("/auth")
-	auth.Post("/login", authHandler.Login)                     // Login via vistara-be
+	auth.Post("/login", authHandler.Login)                     // Login via vistara-be (returns vistara-ai token)
+	auth.Post("/login-vistara-be", authHandler.LoginVistaraBe) // Login via vistara-be (returns vistara-be token)
 	auth.Post("/login-fallback", authHandler.LoginFallback)    // Fallback when vistara-be is down
 	auth.Get("/test-token", authHandler.GenerateTestToken)     // For development/testing
 	auth.Get("/check-connection", authHandler.CheckConnection) // Check vistara-be connection
