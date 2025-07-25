@@ -23,6 +23,19 @@ func init() {
 	})
 }
 
+// Validator provides validation functionality
+type Validator struct{}
+
+// NewValidator creates a new validator instance
+func NewValidator() *Validator {
+	return &Validator{}
+}
+
+// Validate validates a struct and returns formatted errors
+func (v *Validator) Validate(s interface{}) []ValidationError {
+	return ValidateStruct(s)
+}
+
 // ValidationError represents a single validation error
 type ValidationError struct {
 	Field   string `json:"field"`
