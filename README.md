@@ -1,62 +1,96 @@
-# Vistara AI - Uniting Journey and Indonesia
+# Vistara AI
 
-## 🌺 Features
+<div align="center">
+  <img src="assets/vistara-mockup.png" alt="Vistara AI Mockup" width="800"/>
+</div>
 
-- **Cultural AI Assistant**: Intelligent guidance that celebrates Indonesian heritage and traditions
-- **Journey-Culture Integration**: Seamlessly connects travel experiences with cultural learning
-- **Multi-modal Platform**: Supports education, ticketing, navigation, and translation services
-- **Heritage Preservation**: AI-powered content that promotes and preserves Indonesian culture
-- **Authentic Experiences**: Connects visitors with genuine local traditions and communitiesre
+<br/>
 
-Vistara AI is an intelligent service that bridges journeys and Indonesian culture using Google's Gemini AI. It's part of the **Vistara** platform - a comprehensive digital ecosystem that integrates education, ticketing, navigation, and local language translation to preserve, promote, and celebrate Indonesian heritage.
-
-The AI service seamlessly integrates with the Vistara platform to provide culturally-rich experiences that connect people with Indonesia's diverse traditions, heritage sites, and authentic local culture.
+Vistara - A culture and tourism-based digital platform integrating education, ticketing, navigation, and local language translation to preserve and promote Indonesian heritage.
 
 ## 🚀 Quick Start
 
 ```bash
-# Setup (first time)
+# Setup project
 make setup
 
-# Run development server
+# Development mode with hot reload
 make dev
 
-# Test the API
-make test-api
+# Test all endpoints
+make test-all-endpoints
 ```
 
-## 📋 Prerequisites
+## 📋 Main Features
 
-- Go 1.19+
-- Google Gemini API Key
-- Docker (optional)
+### 🗺️ Smart Planner
+Automatic travel planning based on budget, preferences, and travel style.
+
+**Endpoint:** `POST /api/v1/user/smart-planner`
+
+```json
+{
+  "destination": "Yogyakarta",
+  "start_date": "2025-06-10T00:00:00Z",
+  "end_date": "2025-06-12T00:00:00Z",
+  "budget": 300000,
+  "activity_preferences": ["Nature Exploration", "History & culture", "Culinary"],
+  "travel_style": "solo_traveler",
+  "activity_intensity": "balanced"
+}
+```
+
+### 📚 AI Historian
+Historical stories of tourist locations in English with cultural context.
+
+**Endpoint:** `POST /api/v1/user/historical-story`
+
+```json
+{
+  "location": "Borobudur Temple"
+}
+```
+
+### 🗣️ Nusalingo
+Multi-language translator for tourist communication needs.
+
+**Endpoint:** `POST /api/v1/user/nusalingo`
+
+```json
+{
+  "input_text": "Halo, lama tidak bertemu! Bagaimana kabar kamu?",
+  "from_language": "Indonesia",
+  "to_language": "Banjar"
+}
+```
 
 ## ⚙️ Configuration
 
-Create `.env` file:
-
-```env
-# Required
-GEMINI_API_KEY=your_gemini_api_key
-
-# Optional (has defaults)
+### Environment Variables
+```bash
+# Server
 PORT=8080
-API_SECRET_KEY=vistara-ai-default-key
-JWT_SECRET=vistara-ai-jwt-secret-change-in-production
-VISTARA_BE_URL=http://localhost:8080
 GO_ENV=development
+
+# AI Service
+GEMINI_API_KEY=your_gemini_api_key_here
 GEMINI_MODEL_NAME=gemini-2.5-flash
-LOG_LEVEL=info
-ALLOWED_ORIGINS=*
+
+# Timeout Configuration
+SMART_PLANNER_TIMEOUT=120
+AI_HISTORIAN_TIMEOUT=60
+NUSALINGO_TIMEOUT=30
+
+# JWT Integration
+JWT_SECRET=your_jwt_secret_here
+VISTARA_BE_JWT_SECRET=your_vistara_be_jwt_secret_here
 ```
 
-## � Features
-
-- **Smart Itinerary Planning**: AI-powered travel plans using Google Gemini
-- **Cultural Integration**: Focuses on Indonesian heritage and cultural experiences
-- **Multi-tier Authentication**: Secure user and service-to-service communication
-- **Seamless Integration**: Works with Vistara BE for comprehensive travel solutions
-- **Flexible API**: Supports various authentication methods for different use cases
+### Performance Features
+- ⚡ **Concurrent Processing** - Up to 10 concurrent requests
+- ⏱️ **Smart Timeouts** - Adaptive timeout per service
+- 🔄 **Hot Reload** - Air development server
+- 🔐 **JWT Integration** - Compatible with vistara-be
 
 ## 🛠️ Development
 
@@ -70,74 +104,86 @@ make fmt
 # Run linter
 make lint
 
-# Run tests with coverage
-make test-coverage
-
-# Build application
+# Build production
 make build
 
-# Stop development server
-make stop
-```
+# Run tests
+make test
 
-## 🐳 Docker
-
-```bash
-# Build Docker image
+# Docker
 make docker-build
-
-# Run Docker container
 make docker-run
 ```
-
-## 🔒 Authentication
-
-Vistara AI uses a secure multi-tier authentication system to ensure proper access control:
-
-- **Public Access**: Health checks and basic information
-- **User Authentication**: JWT-based authentication for traveler features
-- **Service Authentication**: API key authentication for inter-service communication
-- **Flexible Security**: Multiple authentication options to support different integration needs
-
-## 🏛️ About Vistara Platform
-
-Vistara is a comprehensive digital ecosystem designed to bridge the gap between modern travel and Indonesia's rich cultural heritage:
-
-- **Education**: Deep cultural learning and interactive heritage storytelling
-- **Ticketing**: Seamless access to cultural sites, museums, and traditional experiences
-- **Navigation**: Culturally-aware routing that highlights heritage along the journey
-- **Translation**: Local language support for authentic cultural immersion
-
-The AI service enhances this ecosystem by providing intelligent assistance that doesn't just guide journeys, but enriches them with cultural meaning and authentic Indonesian experiences.
 
 ## 🧪 Testing
 
 ```bash
-# Test health endpoint
-make test-api
+# Test individual services
+make test-api           # Health check
+make test-smart-plan    # Smart planner
+make test-historian     # Historical stories
+make test-nusalingo     # Language translator
 
-# Test AI functionality
-make test-smart-plan
-
-# Run all tests
-make test
-
-# Reset project to clean state
-make reset-setup
+# Test all endpoints
+make test-all-endpoints
 ```
 
-## 🤝 Integration with Vistara Platform
+## 📁 Project Structure
 
-Vistara AI serves as the intelligent cultural bridge within the broader Vistara ecosystem:
+```
+vistara-ai/
+├── cmd/api/              # Application entry point
+├── internal/handler/     # HTTP handlers
+├── middleware/           # JWT auth & CORS
+├── pkg/
+│   ├── dto/             # Data transfer objects
+│   ├── service/         # Business logic & AI integration
+│   └── util/            # Helper functions
+├── infra/               # Infrastructure (HTTP server, logger)
+└── scripts/             # Setup & reset scripts
+```
 
-- **Cultural Heritage Focus**: Prioritizes authentic Indonesian cultural sites, traditions, and heritage experiences
-- **Community Connection**: Links visitors with local communities, artisans, and cultural practitioners
-- **Educational Journey**: Transforms every interaction into a learning opportunity about Indonesian culture
-- **Language & Tradition**: Supports local languages and traditional practices for authentic cultural exchange
-- **Heritage Preservation**: Contributes to documenting and preserving Indonesia's diverse cultural legacy
+## 🔧 Maintenance
 
-This integration ensures that every experience through Vistara not only creates meaningful moments but actively participates in celebrating and preserving Indonesia's rich cultural tapestry - truly *"Menyatukan Perjalanan dan Budaya Indonesia"*.
+```bash
+# Reset project to initial state
+./scripts/reset-setup.sh
 
-## 📝 License
+# Clean build artifacts
+make clean
 
-This project is proprietary software of Vistara Studio.
+# Update dependencies
+make mod-tidy
+```
+
+## 🐳 Docker Support
+
+```bash
+# Build & run with Docker
+docker-compose up --build
+
+# Or manually
+make docker-build
+make docker-run
+```
+
+## 📝 API Documentation
+
+All endpoints require JWT authorization header:
+```
+Authorization: Bearer <your-jwt-token>
+```
+
+Response format is consistent with standard JSON structure and clear error handling.
+
+---
+
+## 📄 License
+
+Copyright © 2025 [Muhammad Rafly Ash Shiddiqi](https://github.com/einrafh)
+
+Licensed under MIT License - see [LICENSE](LICENSE) file for complete details.
+
+---
+
+*Made with ❤️ for Indonesian tourism*
