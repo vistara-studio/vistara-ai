@@ -68,6 +68,49 @@ type UserProfile struct {
 	Role     string `json:"role"`
 }
 
+// LoginWithVistaraBe performs login and returns vistara-be JWT token directly
+func (s *AuthService) LoginWithVistaraBe(email, password string) (string, error) {
+	loginReq := LoginRequest{
+		Email:    email,
+		Password: password,
+	}
+
+	jsonData, err := json.Marshal(loginReq)
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal login request: %w", err)
+	}
+
+	// Make request to vistara-be login endpoint
+	req, err := http.NewRequest("POST", s.cfg.VistaraBeURL+"/api/auth/login", bytes.NewBuffer(jsonData))
+	if err != nil {
+		return "", fmt.Errorf("failed to create login request: %w", err)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-Service", "vistara-ai")
+
+	resp, err := s.httpClient.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("failed to make login request to vistara-be: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("login failed with status: %d", resp.StatusCode)
+	}
+
+	var loginResp VistaraBeLoginResponse
+	if err := json.NewDecoder(resp.Body).Decode(&loginResp); err != nil {
+		return "", fmt.Errorf("failed to decode login response: %w", err)
+	}
+
+	if !loginResp.Success || loginResp.Data.Token == "" {
+		return "", fmt.Errorf("login failed: %s", loginResp.Message)
+	}
+
+	return loginResp.Data.Token, nil
+}
+
 // ValidateLoginWithVistaraBe validates user login through vistara-be
 func (s *AuthService) ValidateLoginWithVistaraBe(email, password string) (*UserProfile, error) {
 	loginReq := LoginRequest{

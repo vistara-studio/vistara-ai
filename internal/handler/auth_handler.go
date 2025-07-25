@@ -86,6 +86,37 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 	})
 }
 
+// LoginVistaraBe handles login and returns token directly from vistara-be
+func (h *AuthHandler) LoginVistaraBe(c *fiber.Ctx) error {
+	var req LoginRequest
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"success": false,
+			"message": "Invalid request format",
+		})
+	}
+
+	// Login directly with vistara-be and get their JWT token
+	token, err := h.authService.LoginWithVistaraBe(req.Email, req.Password)
+	if err != nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"success": false,
+			"message": "Invalid email or password",
+			"error":   err.Error(),
+		})
+	}
+
+	return c.JSON(fiber.Map{
+		"success": true,
+		"message": "Login successful with vistara-be token",
+		"data": fiber.Map{
+			"token":  token,
+			"usage":  "Use this token in Authorization header as 'Bearer " + token + "'",
+			"source": "vistara-be",
+		},
+	})
+}
+
 // GetProfile returns the current user's profile from JWT
 func (h *AuthHandler) GetProfile(c *fiber.Ctx) error {
 	// Get user info from JWT middleware

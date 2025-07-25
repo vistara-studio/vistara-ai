@@ -20,9 +20,9 @@ type JWTClaims struct {
 
 // VistaBeClaims represents the JWT claims structure from vistara-be
 type VistaBeClaims struct {
-	UserID           string `json:"user_id"`
-	IsPremium        bool   `json:"is_premium"`
-	PremiumExpiredAt string `json:"premium_expired_at"`
+	UserID           string    `json:"user_id"`
+	IsPremium        bool      `json:"is_premium"`
+	PremiumExpiredAt time.Time `json:"premium_expired_at"`
 	jwt.RegisteredClaims
 }
 
@@ -55,9 +55,45 @@ func JWTAuth(cfg *config.Config) fiber.Handler {
 			})
 		}
 
-		// Parse and validate token
-		token, err := jwt.ParseWithClaims(tokenString, &JWTClaims{}, func(token *jwt.Token) (interface{}, error) {
-			// Validate signing method
+		// Parse and validate token - try vistara-be format first, then vistara-ai format
+		var userID string
+		var isPremium bool
+
+		// First try to parse as vistara-be token
+		token, err := jwt.ParseWithClaims(tokenString, &VistaBeClaims{}, func(token *jwt.Token) (interface{}, error) {
+			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+				return nil, jwt.ErrSignatureInvalid
+			}
+			return []byte(cfg.JWTSecret), nil
+		})
+
+		if err == nil && token.Valid {
+			// Token is from vistara-be
+			if claims, ok := token.Claims.(*VistaBeClaims); ok {
+				// Validate issuer for vistara-be tokens
+				if claims.Issuer != "nusa" {
+					return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+						"success": false,
+						"message": "Invalid token issuer",
+					})
+				}
+
+				userID = claims.UserID
+				isPremium = claims.IsPremium
+
+				// Store vistara-be specific info in context
+				c.Locals("user_id", userID)
+				c.Locals("is_premium", isPremium)
+				c.Locals("premium_expired_at", claims.PremiumExpiredAt)
+				c.Locals("token_source", "vistara-be")
+				c.Locals("jwt_claims", claims)
+
+				return c.Next()
+			}
+		}
+
+		// If vistara-be parsing failed, try vistara-ai format
+		token, err = jwt.ParseWithClaims(tokenString, &JWTClaims{}, func(token *jwt.Token) (interface{}, error) {
 			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 				return nil, jwt.ErrSignatureInvalid
 			}
@@ -71,7 +107,7 @@ func JWTAuth(cfg *config.Config) fiber.Handler {
 			})
 		}
 
-		// Extract claims
+		// Extract vistara-ai claims
 		claims, ok := token.Claims.(*JWTClaims)
 		if !ok || !token.Valid {
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
@@ -88,11 +124,12 @@ func JWTAuth(cfg *config.Config) fiber.Handler {
 			})
 		}
 
-		// Store user info in context
+		// Store vistara-ai user info in context
 		c.Locals("user_id", claims.UserID)
 		c.Locals("username", claims.Username)
 		c.Locals("email", claims.Email)
 		c.Locals("role", claims.Role)
+		c.Locals("token_source", "vistara-ai")
 		c.Locals("jwt_claims", claims)
 
 		return c.Next()
